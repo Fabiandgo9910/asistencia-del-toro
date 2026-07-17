@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body {
+  background: #F7F7F8;
+  color: #1C1C1E;
+}
+
+/* Tabulares para matrículas y números */
+.tabular {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* Placa estilo matrícula española - elemento distintivo del panel */
+.plate {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #1C1C1E14;
+  font-family: var(--font-inter);
+  font-weight: 700;
+}
+.plate__eu {
+  background: #2857A8;
+  color: white;
+  font-size: 8px;
+  font-weight: 700;
+  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+}
+.plate__num {
+  background: #FDFBF4;
+  color: #1C1C1E;
+  padding: 2px 8px;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+}
+
+/* Focus visible accesible */
+:focus-visible {
+  outline: 2px solid #C81D2A;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
