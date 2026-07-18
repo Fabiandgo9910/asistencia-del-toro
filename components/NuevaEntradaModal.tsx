@@ -22,6 +22,7 @@ export default function NuevaEntradaModal({
   const [tieneLlave, setTieneLlave] = useState(true);
   const [calcinado, setCalcinado] = useState(false);
   const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (!abierto) return null;
 
@@ -38,6 +39,7 @@ export default function NuevaEntradaModal({
   const guardar = async () => {
     if (!matricula.trim()) return;
     setGuardando(true);
+    setError(null);
     try {
       const res = await fetch("/api/coches", {
         method: "POST",
@@ -56,7 +58,12 @@ export default function NuevaEntradaModal({
         limpiar();
         onCreado();
         onCerrar();
+      } else {
+        const data = await res.json().catch(() => null);
+        setError(data?.detalle || data?.error || "No se pudo guardar. Inténtalo de nuevo.");
       }
+    } catch {
+      setError("No hay conexión con el servidor. Comprueba tu red e inténtalo de nuevo.");
     } finally {
       setGuardando(false);
     }
@@ -129,6 +136,12 @@ export default function NuevaEntradaModal({
             </label>
           </div>
         </div>
+
+        {error && (
+          <p className="mt-3 rounded-card bg-toro-warnBg px-3 py-2 text-xs text-toro-red">
+            {error}
+          </p>
+        )}
 
         <button
           onClick={guardar}

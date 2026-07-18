@@ -7,7 +7,7 @@ export type Coche = {
   traslado: string | null;
   empresa_traslado: string | null;
   fecha_traslado: string | null;
-  consigna: string | null;
+  consigna: string | null; // fecha de la última consigna
   matricula: string;
   modelo: string | null;
   numero_expediente: string | null;
@@ -19,6 +19,8 @@ export type Coche = {
   dias_totales: number;
   dias_extra: number;
   penalizacion: number;
+  fecha_fin_propios: string; // vencen nuestros 3 días
+  fecha_fin_mapfre: string; // vence la cobertura de Mapfre (día 12)
 };
 
 export type NuevoCochePayload = {

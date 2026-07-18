@@ -11,7 +11,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ coches });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error al buscar coches" }, { status: 500 });
+    const mensaje = err instanceof Error ? err.message : "Error desconocido";
+    return NextResponse.json({ error: "Error al buscar coches", detalle: mensaje }, { status: 500 });
   }
 }
 
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id }, { status: 201 });
   } catch (err) {
     console.error(err);
-    return NextResponse.json({ error: "Error al crear el registro" }, { status: 500 });
+    const mensaje = err instanceof Error ? err.message : "Error desconocido";
+    return NextResponse.json({ error: "Error al crear el registro", detalle: mensaje }, { status: 500 });
   }
 }

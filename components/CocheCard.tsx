@@ -1,17 +1,22 @@
 "use client";
 
-import { Key, Flame, LogOut, MapPin } from "lucide-react";
+import { Key, Flame, LogOut, MapPin, Pencil } from "lucide-react";
 import MatriculaBadge from "./MatriculaBadge";
 import type { Coche } from "@/types/coche";
+
+const fmtCorta = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" }) : "—";
 
 export default function CocheCard({
   coche,
   onTogglePresencia,
-  onDarSalida,
+  onPedirSalida,
+  onEditar,
 }: {
   coche: Coche;
   onTogglePresencia: (id: number, valor: boolean) => void;
-  onDarSalida: (id: number) => void;
+  onPedirSalida: (coche: Coche) => void;
+  onEditar: (coche: Coche) => void;
 }) {
   const activo = !coche.fecha_salida;
   const tieneDeuda = coche.penalizacion > 0;
@@ -19,7 +24,11 @@ export default function CocheCard({
   return (
     <div className="flex items-center gap-3 rounded-card border border-toro-line bg-toro-surface p-3 shadow-card sm:gap-4 sm:p-4">
       {/* Identificación */}
-      <div className="min-w-0 flex-1">
+      <button
+        onClick={() => onEditar(coche)}
+        className="min-w-0 flex-1 text-left"
+        title="Abrir expediente"
+      >
         <div className="flex flex-wrap items-center gap-2">
           <MatriculaBadge matricula={coche.matricula} />
           {coche.modelo && (
@@ -45,7 +54,10 @@ export default function CocheCard({
             </span>
           )}
         </div>
-      </div>
+        <p className="mt-0.5 text-[11px] text-toro-slate/80">
+          Revisado {fmtCorta(coche.ultima_revision)}
+        </p>
+      </button>
 
       {/* Penalización */}
       {tieneDeuda && (
@@ -61,7 +73,7 @@ export default function CocheCard({
       <button
         onClick={() => onTogglePresencia(coche.id, !coche.check_presencia)}
         aria-pressed={coche.check_presencia}
-        title="Marcar presencia en auditoría diaria"
+        title="Marcar presencia en auditoría"
         className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
           coche.check_presencia
             ? "bg-toro-okBg text-toro-ok"
@@ -71,11 +83,20 @@ export default function CocheCard({
         {coche.check_presencia ? "Presente" : "No está"}
       </button>
 
-      {/* Dar salida - 1 clic */}
+      {/* Editar */}
+      <button
+        onClick={() => onEditar(coche)}
+        title="Editar expediente"
+        className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
+      >
+        <Pencil size={14} />
+      </button>
+
+      {/* Dar salida - pide confirmación */}
       {activo && (
         <button
-          onClick={() => onDarSalida(coche.id)}
-          title="Dar salida ahora"
+          onClick={() => onPedirSalida(coche)}
+          title="Dar salida"
           className="flex shrink-0 items-center gap-1 rounded-card bg-toro-ink px-3 py-1.5 text-xs font-medium text-white transition hover:bg-toro-red"
         >
           <LogOut size={14} />

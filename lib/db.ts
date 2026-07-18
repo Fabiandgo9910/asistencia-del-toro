@@ -27,9 +27,12 @@ function sql(query: string, params?: unknown[]) {
   return sqlClient(query, params);
 }
 
-// SQL que calcula días totales / extra / penalización directamente en la base:
+// SQL que calcula el desglose completo de custodia directamente en la base:
 // - Si fecha_salida es NULL (coche activo), se cuenta hasta CURRENT_DATE.
 // - Si ya salió, se cuenta entre fecha_entrada y fecha_salida.
+// - fecha_fin_propios: día en que se agotan nuestros 3 días propios.
+// - fecha_fin_mapfre: día en que se agota la cobertura de Mapfre (día 12),
+//   a partir del cual empieza a generar penalización.
 const SELECT_CON_CALCULO = `
   SELECT
     id, plaza, fecha_entrada, tiene_llave, esta_calcinado, traslado,
@@ -52,7 +55,9 @@ const SELECT_CON_CALCULO = `
         0
       ) - 12,
       0
-    ) * 13 AS penalizacion
+    ) * 13 AS penalizacion,
+    (fecha_entrada + INTERVAL '3 days')::date AS fecha_fin_propios,
+    (fecha_entrada + INTERVAL '12 days')::date AS fecha_fin_mapfre
   FROM coches
 `;
 
@@ -102,10 +107,25 @@ export async function crearCoche(data: {
   return rows[0].id as number;
 }
 
-export async function darSalida(id: number) {
+// Dar salida ahora admite indicar si fue por traslado y, si aplica,
+// la empresa que se lo llevó. fecha_traslado se guarda como la misma
+// fecha/hora de la salida.
+export async function darSalida(
+  id: number,
+  opciones: { esTraslado: boolean; empresaTraslado?: string | null }
+) {
   await sql(
-    `UPDATE coches SET fecha_salida = NOW() WHERE id = $1 AND fecha_salida IS NULL`,
-    [id]
+    `UPDATE coches
+     SET fecha_salida = NOW(),
+         traslado = $2,
+         empresa_traslado = $3,
+         fecha_traslado = CASE WHEN $2 IS NOT NULL THEN NOW() ELSE fecha_traslado END
+     WHERE id = $1 AND fecha_salida IS NULL`,
+    [
+      id,
+      opciones.esTraslado ? "Sí" : null,
+      opciones.esTraslado ? opciones.empresaTraslado ?? null : null,
+    ]
   );
 }
 
@@ -122,6 +142,10 @@ export async function actualizarCoche(id: number, campos: Record<string, unknown
   const sets = claves.map((c, i) => `${c} = $${i + 2}`).join(", ");
   const valores = claves.map((c) => campos[c]);
   await sql(`UPDATE coches SET ${sets} WHERE id = $1`, [id, ...valores]);
+}
+
+export async function eliminarCoche(id: number) {
+  await sql(`DELETE FROM coches WHERE id = $1`, [id]);
 }
 
 export async function todosParaExportar(): Promise<Coche[]> {

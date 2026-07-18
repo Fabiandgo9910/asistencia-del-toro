@@ -5,6 +5,8 @@ import { Plus } from "lucide-react";
 import BuscadorBar from "./BuscadorBar";
 import CocheCard from "./CocheCard";
 import NuevaEntradaModal from "./NuevaEntradaModal";
+import SalidaModal from "./SalidaModal";
+import EditarCocheModal from "./EditarCocheModal";
 import type { Coche } from "@/types/coche";
 
 export default function Dashboard() {
@@ -12,6 +14,8 @@ export default function Dashboard() {
   const [coches, setCoches] = useState<Coche[]>([]);
   const [cargando, setCargando] = useState(true);
   const [modalAbierto, setModalAbierto] = useState(false);
+  const [cocheParaSalida, setCocheParaSalida] = useState<Coche | null>(null);
+  const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
 
   const cargar = useCallback(async (q: string) => {
     const res = await fetch(`/api/coches?q=${encodeURIComponent(q)}`);
@@ -29,27 +33,15 @@ export default function Dashboard() {
 
   const togglePresencia = async (id: number, valor: boolean) => {
     setCoches((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, check_presencia: valor } : c))
+      prev.map((c) =>
+        c.id === id ? { ...c, check_presencia: valor, ultima_revision: new Date().toISOString() } : c
+      )
     );
     await fetch(`/api/coches/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ accion: "presencia", valor }),
     });
-  };
-
-  const darSalida = async (id: number) => {
-    setCoches((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, fecha_salida: new Date().toISOString() } : c
-      )
-    );
-    await fetch(`/api/coches/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "dar_salida" }),
-    });
-    cargar(query);
   };
 
   const exportar = () => {
@@ -82,7 +74,8 @@ export default function Dashboard() {
               key={coche.id}
               coche={coche}
               onTogglePresencia={togglePresencia}
-              onDarSalida={darSalida}
+              onPedirSalida={setCocheParaSalida}
+              onEditar={setCocheParaEditar}
             />
           ))}
         </div>
@@ -101,6 +94,19 @@ export default function Dashboard() {
         abierto={modalAbierto}
         onCerrar={() => setModalAbierto(false)}
         onCreado={() => cargar(query)}
+      />
+
+      <SalidaModal
+        coche={cocheParaSalida}
+        onCerrar={() => setCocheParaSalida(null)}
+        onConfirmado={() => cargar(query)}
+      />
+
+      <EditarCocheModal
+        coche={cocheParaEditar}
+        onCerrar={() => setCocheParaEditar(null)}
+        onGuardado={() => cargar(query)}
+        onEliminado={() => cargar(query)}
       />
     </main>
   );

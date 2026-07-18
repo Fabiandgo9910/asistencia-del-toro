@@ -20,7 +20,6 @@ html, body {
   border-radius: 4px;
   overflow: hidden;
   border: 1px solid #1C1C1E14;
-  font-family: var(--font-inter);
   font-weight: 700;
 }
 .plate__eu {
