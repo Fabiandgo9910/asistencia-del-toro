@@ -17,24 +17,36 @@ export default function EditarCocheModal({
   onEliminado: () => void;
 }) {
   const [matricula, setMatricula] = useState("");
-  const [plaza, setPlaza] = useState("");
   const [modelo, setModelo] = useState("");
+  const [plaza, setPlaza] = useState("");
+  const [expediente, setExpediente] = useState("");
+  const [fecha, setFecha] = useState("");
+  const [tieneLlave, setTieneLlave] = useState(true);
+  const [calcinado, setCalcinado] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [confirmarGuardar, setConfirmarGuardar] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Precarga el formulario con los valores actuales del coche cada vez que
+  // se abre un expediente distinto (mismo formulario que "Nueva entrada").
   useEffect(() => {
     if (coche) {
       setMatricula(coche.matricula);
-      setPlaza(coche.plaza != null ? String(coche.plaza) : "");
       setModelo(coche.modelo ?? "");
+      setPlaza(coche.plaza != null ? String(coche.plaza) : "");
+      setExpediente(coche.numero_expediente ?? "");
+      setFecha(coche.fecha_entrada?.slice(0, 10) ?? "");
+      setTieneLlave(coche.tiene_llave);
+      setCalcinado(coche.esta_calcinado);
+      setError(null);
     }
   }, [coche]);
 
   if (!coche) return null;
 
   const guardar = async () => {
+    if (!matricula.trim()) return;
     setGuardando(true);
     setError(null);
     try {
@@ -43,8 +55,12 @@ export default function EditarCocheModal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           matricula,
-          plaza: plaza.trim() === "" ? null : Number(plaza),
-          modelo: modelo.trim() === "" ? null : modelo,
+          modelo: modelo || null,
+          plaza: plaza ? Number(plaza) : null,
+          numero_expediente: expediente || null,
+          fecha_entrada: fecha,
+          tiene_llave: tieneLlave,
+          esta_calcinado: calcinado,
         }),
       });
       if (res.ok) {
@@ -88,9 +104,9 @@ export default function EditarCocheModal({
   return (
     <>
       <div className="fixed inset-0 z-20 flex items-end justify-center bg-toro-ink/40 sm:items-center">
-        <div className="w-full max-w-sm rounded-t-card bg-toro-surface p-5 shadow-card sm:rounded-card">
+        <div className="w-full max-w-md rounded-t-card bg-toro-surface p-5 shadow-card sm:rounded-card">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-toro-ink">Editar</h2>
+            <h2 className="text-base font-semibold text-toro-ink">Editar expediente</h2>
             <button onClick={onCerrar} className="text-toro-slate hover:text-toro-ink">
               <X size={20} />
             </button>
@@ -101,15 +117,8 @@ export default function EditarCocheModal({
               autoFocus
               value={matricula}
               onChange={(e) => setMatricula(e.target.value.toUpperCase())}
-              placeholder="Matrícula"
-              className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm uppercase outline-none focus:border-toro-red/40"
-            />
-            <input
-              value={plaza}
-              onChange={(e) => setPlaza(e.target.value.replace(/\D/g, ""))}
-              placeholder="Plaza (opcional)"
-              inputMode="numeric"
-              className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
+              placeholder="Matrícula *"
+              className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm uppercase tracking-wide outline-none focus:border-toro-red/40"
             />
             <input
               value={modelo}
@@ -117,6 +126,48 @@ export default function EditarCocheModal({
               placeholder="Modelo"
               className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
             />
+            <div className="flex gap-3">
+              <input
+                value={plaza}
+                onChange={(e) => setPlaza(e.target.value.replace(/\D/g, ""))}
+                placeholder="Plaza"
+                inputMode="numeric"
+                className="w-1/2 rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
+              />
+              <input
+                value={expediente}
+                onChange={(e) => setExpediente(e.target.value)}
+                placeholder="Nº expediente"
+                className="w-1/2 rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
+              />
+            </div>
+            <label className="flex items-center justify-between text-sm text-toro-slate">
+              Fecha de entrada
+              <input
+                type="date"
+                value={fecha}
+                onChange={(e) => setFecha(e.target.value)}
+                className="rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
+              />
+            </label>
+            <div className="flex gap-2 pt-1">
+              <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
+                <input
+                  type="checkbox"
+                  checked={tieneLlave}
+                  onChange={(e) => setTieneLlave(e.target.checked)}
+                />
+                Tiene llave
+              </label>
+              <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
+                <input
+                  type="checkbox"
+                  checked={calcinado}
+                  onChange={(e) => setCalcinado(e.target.checked)}
+                />
+                Calcinado
+              </label>
+            </div>
           </div>
 
           {error && (
@@ -136,10 +187,10 @@ export default function EditarCocheModal({
             <button
               onClick={() => setConfirmarGuardar(true)}
               disabled={!matricula.trim()}
-              className="flex flex-1 items-center justify-center gap-1.5 rounded-card bg-toro-ink py-2.5 text-sm font-semibold text-white transition hover:bg-toro-red disabled:opacity-40"
+              className="flex flex-1 items-center justify-center gap-2 rounded-card bg-toro-red py-2.5 text-sm font-semibold text-white transition hover:bg-toro-redDark disabled:opacity-40"
             >
               <Save size={16} />
-              Guardar
+              Guardar cambios
             </button>
           </div>
         </div>

@@ -109,7 +109,14 @@ export async function crearCoche(data: {
 
 // Dar salida ahora admite indicar si fue por traslado y, si aplica,
 // la empresa que se lo llevó. fecha_traslado se guarda como la misma
-// fecha/hora de la salida.
+// fecha/hora de la salida. Un coche que ya salió deja de contar como
+// "presente" en las auditorías.
+//
+// Nota técnica: cuando $2/$3 llegan como null (salida sin traslado), el
+// driver HTTP de Neon no siempre puede inferir su tipo de columna a partir
+// del contexto de la consulta, y Postgres responde con el error
+// "could not determine data type of parameter". Se soluciona forzando el
+// tipo con un cast explícito ($2::varchar).
 export async function darSalida(
   id: number,
   opciones: { esTraslado: boolean; empresaTraslado?: string | null }
@@ -117,9 +124,10 @@ export async function darSalida(
   await sql(
     `UPDATE coches
      SET fecha_salida = NOW(),
-         traslado = $2,
-         empresa_traslado = $3,
-         fecha_traslado = CASE WHEN $2 IS NOT NULL THEN NOW() ELSE fecha_traslado END
+         check_presencia = false,
+         traslado = $2::varchar,
+         empresa_traslado = $3::varchar,
+         fecha_traslado = CASE WHEN $2::varchar IS NOT NULL THEN NOW() ELSE fecha_traslado END
      WHERE id = $1 AND fecha_salida IS NULL`,
     [
       id,

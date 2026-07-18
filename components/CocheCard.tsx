@@ -72,19 +72,25 @@ export default function CocheCard({
           </div>
         )}
 
-        {/* Check de presencia diaria - 1 clic */}
-        <button
-          onClick={() => onTogglePresencia(coche.id, !coche.check_presencia)}
-          aria-pressed={coche.check_presencia}
-          title="Marcar presencia en auditoría"
-          className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-            coche.check_presencia
-              ? "bg-toro-okBg text-toro-ok"
-              : "bg-toro-warnBg text-toro-red"
-          }`}
-        >
-          {coche.check_presencia ? "Presente" : "No está"}
-        </button>
+        {/* Check de presencia diaria - 1 clic. Un coche que ya salió no puede estar "presente". */}
+        {activo ? (
+          <button
+            onClick={() => onTogglePresencia(coche.id, !coche.check_presencia)}
+            aria-pressed={coche.check_presencia}
+            title="Marcar presencia en auditoría"
+            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+              coche.check_presencia
+                ? "bg-toro-okBg text-toro-ok"
+                : "bg-toro-warnBg text-toro-red"
+            }`}
+          >
+            {coche.check_presencia ? "Presente" : "No está"}
+          </button>
+        ) : (
+          <span className="shrink-0 rounded-full bg-toro-line px-3 py-1.5 text-xs font-medium text-toro-slate">
+            Fuera
+          </span>
+        )}
 
         {/* Editar */}
         <button

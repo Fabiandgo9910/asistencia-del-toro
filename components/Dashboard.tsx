@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Plus } from "lucide-react";
-import BuscadorBar from "./BuscadorBar";
+import BuscadorBar, { type FiltroPresencia } from "./BuscadorBar";
 import CocheCard from "./CocheCard";
 import NuevaEntradaModal from "./NuevaEntradaModal";
 import SalidaModal from "./SalidaModal";
@@ -16,7 +16,9 @@ export default function Dashboard() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cocheParaSalida, setCocheParaSalida] = useState<Coche | null>(null);
   const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
-  const [soloPresentes, setSoloPresentes] = useState(false);
+  // Por defecto solo se muestran los coches presentes, que es el caso de uso
+  // más habitual (parking activo); el operario puede cambiarlo cuando quiera.
+  const [filtro, setFiltro] = useState<FiltroPresencia>("presentes");
 
   const cargar = useCallback(async (q: string) => {
     const res = await fetch(`/api/coches?q=${encodeURIComponent(q)}`);
@@ -49,7 +51,17 @@ export default function Dashboard() {
     window.location.href = `/api/export?q=${encodeURIComponent(query)}`;
   };
 
-  const visibles = soloPresentes ? coches.filter((c) => c.check_presencia) : coches;
+  const visibles = coches.filter((c) => {
+    if (filtro === "presentes") return c.check_presencia;
+    if (filtro === "no_presentes") return !c.check_presencia;
+    return true;
+  });
+
+  const mensajeVacio = {
+    presentes: "Ningún coche presente coincide con la búsqueda.",
+    no_presentes: "Ningún coche marcado como ausente coincide con la búsqueda.",
+    todos: `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`,
+  }[filtro];
 
   return (
     <main className="min-h-screen pb-24">
@@ -57,8 +69,8 @@ export default function Dashboard() {
         valor={query}
         onChange={setQuery}
         onExportar={exportar}
-        soloPresentes={soloPresentes}
-        onToggleSoloPresentes={() => setSoloPresentes((v) => !v)}
+        filtro={filtro}
+        onCambiarFiltro={setFiltro}
       />
 
       <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6">
@@ -73,9 +85,7 @@ export default function Dashboard() {
 
         {!cargando && visibles.length === 0 && (
           <p className="rounded-card border border-dashed border-toro-line py-10 text-center text-sm text-toro-slate">
-            {soloPresentes
-              ? "Ningún coche presente coincide con la búsqueda."
-              : `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`}
+            {mensajeVacio}
           </p>
         )}
 
