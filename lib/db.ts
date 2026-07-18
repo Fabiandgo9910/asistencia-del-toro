@@ -65,7 +65,7 @@ export async function buscarCoches(query: string): Promise<Coche[]> {
   const like = `%${query.trim().toUpperCase()}%`;
   const rows = await sql(
     `${SELECT_CON_CALCULO}
-     WHERE ($1 = '' OR matricula ILIKE $1 OR numero_expediente ILIKE $1)
+     WHERE ($1 = '' OR matricula ILIKE $1 OR numero_expediente ILIKE $1 OR modelo ILIKE $1)
      ORDER BY (fecha_salida IS NOT NULL), fecha_entrada DESC
      LIMIT 200`,
     [query.trim() === "" ? "" : like]

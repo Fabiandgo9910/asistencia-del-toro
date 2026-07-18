@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cocheParaSalida, setCocheParaSalida] = useState<Coche | null>(null);
   const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
+  const [soloPresentes, setSoloPresentes] = useState(false);
 
   const cargar = useCallback(async (q: string) => {
     const res = await fetch(`/api/coches?q=${encodeURIComponent(q)}`);
@@ -48,9 +49,17 @@ export default function Dashboard() {
     window.location.href = `/api/export?q=${encodeURIComponent(query)}`;
   };
 
+  const visibles = soloPresentes ? coches.filter((c) => c.check_presencia) : coches;
+
   return (
     <main className="min-h-screen pb-24">
-      <BuscadorBar valor={query} onChange={setQuery} onExportar={exportar} />
+      <BuscadorBar
+        valor={query}
+        onChange={setQuery}
+        onExportar={exportar}
+        soloPresentes={soloPresentes}
+        onToggleSoloPresentes={() => setSoloPresentes((v) => !v)}
+      />
 
       <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6">
         <div className="mb-3 flex items-center justify-between">
@@ -58,18 +67,20 @@ export default function Dashboard() {
             Asistencia del Toro
           </h1>
           <span className="text-xs text-toro-slate">
-            {cargando ? "Buscando…" : `${coches.length} resultado${coches.length === 1 ? "" : "s"}`}
+            {cargando ? "Buscando…" : `${visibles.length} resultado${visibles.length === 1 ? "" : "s"}`}
           </span>
         </div>
 
-        {!cargando && coches.length === 0 && (
+        {!cargando && visibles.length === 0 && (
           <p className="rounded-card border border-dashed border-toro-line py-10 text-center text-sm text-toro-slate">
-            Sin coches para “{query || "todos"}”. Registra una entrada con el botón +.
+            {soloPresentes
+              ? "Ningún coche presente coincide con la búsqueda."
+              : `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`}
           </p>
         )}
 
         <div className="space-y-2">
-          {coches.map((coche) => (
+          {visibles.map((coche) => (
             <CocheCard
               key={coche.id}
               coche={coche}
