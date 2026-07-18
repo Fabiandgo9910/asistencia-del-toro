@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { actualizarCoche, actualizarPresencia, darSalida, obtenerCoche } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 // PATCH /api/coches/:id
 // Body admite tres modos, pensados para acciones de 1 clic desde la lista:
 //   { accion: "dar_salida" }

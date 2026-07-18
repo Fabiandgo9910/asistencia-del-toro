@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buscarCoches, crearCoche } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/coches?q=1234ABC  -> búsqueda en tiempo real por matrícula o expediente
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q") ?? "";

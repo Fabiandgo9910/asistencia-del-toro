@@ -1,7 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { neon } from "@neondatabase/serverless";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 
-const sql = neon(process.env.POSTGRES_URL!);
+export const dynamic = "force-dynamic";
+
+let sqlClient: NeonQueryFunction<false, false> | null = null;
+
+function getSql() {
+  if (!sqlClient) {
+    const connectionString = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error("Falta la variable de entorno POSTGRES_URL o DATABASE_URL.");
+    }
+    sqlClient = neon(connectionString);
+  }
+  return sqlClient;
+}
 
 // Este endpoint NO es un trigger de base de datos: los triggers de Postgres
 // reaccionan a INSERT/UPDATE/DELETE, no al simple paso del tiempo. Para borrar
@@ -15,7 +28,8 @@ export async function GET(req: NextRequest) {
 
   // Reutiliza la función SQL definida en sql/schema.sql, que ya
   // devuelve el número de filas borradas.
-  const rows = await sql`SELECT limpiar_registros_antiguos() AS eliminados`;
+  const sql = getSql();
+  const rows = await sql(`SELECT limpiar_registros_antiguos() AS eliminados`);
 
   return NextResponse.json({ eliminados: rows[0].eliminados });
 }

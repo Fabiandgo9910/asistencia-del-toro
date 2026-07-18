@@ -1,11 +1,31 @@
-import { neon } from "@neondatabase/serverless";
+import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import type { Coche } from "@/types/coche";
 
-// Nota: el producto "Vercel Postgres" fue retirado; Vercel migró todas las
-// bases a Neon a través del Marketplace. El driver correcto hoy es
-// @neondatabase/serverless. POSTGRES_URL sigue siendo el nombre de la
-// variable de entorno que Vercel inyecta al enlazar la integración de Neon.
-const sql = neon(process.env.POSTGRES_URL!);
+// La integración de Neon en Vercel inyecta varias variables equivalentes
+// (POSTGRES_URL, DATABASE_URL, ...). Aceptamos cualquiera de las dos para
+// no depender de qué modalidad de integración se instaló.
+//
+// IMPORTANTE: no se crea la conexión al importar el módulo, porque Next.js
+// ejecuta este archivo también durante `next build` (fase "Collecting page
+// data") para analizar las rutas, momento en el que las variables de
+// entorno de runtime todavía pueden no estar disponibles. Por eso se crea
+// de forma perezosa, solo cuando llega la primera petición real.
+let sqlClient: NeonQueryFunction<false, false> | null = null;
+
+function sql(query: string, params?: unknown[]) {
+  if (!sqlClient) {
+    const connectionString = process.env.POSTGRES_URL ?? process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error(
+        "Falta la variable de entorno POSTGRES_URL o DATABASE_URL. " +
+          "Comprueba en Vercel: Settings → Environment Variables, y que la base " +
+          "esté enlazada al proyecto en Storage → tu base → Projects."
+      );
+    }
+    sqlClient = neon(connectionString);
+  }
+  return sqlClient(query, params);
+}
 
 // SQL que calcula días totales / extra / penalización directamente en la base:
 // - Si fecha_salida es NULL (coche activo), se cuenta hasta CURRENT_DATE.

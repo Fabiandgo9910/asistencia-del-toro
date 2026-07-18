@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx";
 import { buscarCoches, todosParaExportar } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/export?q=opcional -> descarga .xlsx
 // Si se pasa q, exporta solo los resultados filtrados; si no, exporta todo.
 export async function GET(req: NextRequest) {
