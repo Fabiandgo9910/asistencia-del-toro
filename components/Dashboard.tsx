@@ -111,7 +111,7 @@ export default function Dashboard() {
         {/* Botón flotante - Nueva entrada, siempre a mano */}
         <button
           onClick={() => setModalAbierto(true)}
-          className="fixed bottom-5 right-5 flex h-14 w-14 items-center justify-center rounded-full bg-toro-red text-white shadow-lg transition hover:bg-toro-redDark sm:h-16 sm:w-16"
+          className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-toro-red text-white shadow-lg transition hover:bg-toro-redDark sm:h-16 sm:w-16"
           title="Registrar entrada"
         >
           <Plus size={26} />
