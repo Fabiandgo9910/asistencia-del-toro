@@ -156,6 +156,21 @@ export async function eliminarCoche(id: number) {
   await sql(`DELETE FROM coches WHERE id = $1`, [id]);
 }
 
+// Solo para exportar: coches que todavía NO han salido (fecha_salida NULL).
+// Admite filtrar además por matrícula/expediente/modelo si se pasa query.
+export async function activosParaExportar(query?: string): Promise<Coche[]> {
+  const q = (query ?? "").trim();
+  const like = `%${q.toUpperCase()}%`;
+  const rows = await sql(
+    `${SELECT_CON_CALCULO}
+     WHERE fecha_salida IS NULL
+       AND ($1 = '' OR matricula ILIKE $1 OR numero_expediente ILIKE $1 OR modelo ILIKE $1)
+     ORDER BY plaza NULLS LAST, fecha_entrada DESC`,
+    [q === "" ? "" : like]
+  );
+  return rows as Coche[];
+}
+
 export async function todosParaExportar(): Promise<Coche[]> {
   const rows = await sql(`${SELECT_CON_CALCULO} ORDER BY fecha_entrada DESC`);
   return rows as Coche[];

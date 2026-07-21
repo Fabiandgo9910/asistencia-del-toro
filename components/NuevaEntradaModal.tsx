@@ -21,6 +21,7 @@ export default function NuevaEntradaModal({
   const [fecha, setFecha] = useState(hoy());
   const [tieneLlave, setTieneLlave] = useState(true);
   const [calcinado, setCalcinado] = useState(false);
+  const [observaciones, setObservaciones] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,6 +35,7 @@ export default function NuevaEntradaModal({
     setFecha(hoy());
     setTieneLlave(true);
     setCalcinado(false);
+    setObservaciones("");
   };
 
   const guardar = async () => {
@@ -52,6 +54,7 @@ export default function NuevaEntradaModal({
           fecha_entrada: fecha,
           tiene_llave: tieneLlave,
           esta_calcinado: calcinado,
+          observaciones,
         }),
       });
       if (res.ok) {
@@ -135,6 +138,13 @@ export default function NuevaEntradaModal({
               Calcinado
             </label>
           </div>
+          <textarea
+            value={observaciones}
+            onChange={(e) => setObservaciones(e.target.value)}
+            placeholder="Observaciones"
+            rows={2}
+            className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
+          />
         </div>
 
         {error && (

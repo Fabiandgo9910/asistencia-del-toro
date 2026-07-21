@@ -23,6 +23,7 @@ export default function EditarCocheModal({
   const [fecha, setFecha] = useState("");
   const [tieneLlave, setTieneLlave] = useState(true);
   const [calcinado, setCalcinado] = useState(false);
+  const [observaciones, setObservaciones] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [confirmarGuardar, setConfirmarGuardar] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
@@ -39,6 +40,7 @@ export default function EditarCocheModal({
       setFecha(coche.fecha_entrada?.slice(0, 10) ?? "");
       setTieneLlave(coche.tiene_llave);
       setCalcinado(coche.esta_calcinado);
+      setObservaciones(coche.observaciones ?? "");
       setError(null);
     }
   }, [coche]);
@@ -61,6 +63,7 @@ export default function EditarCocheModal({
           fecha_entrada: fecha,
           tiene_llave: tieneLlave,
           esta_calcinado: calcinado,
+          observaciones,
         }),
       });
       if (res.ok) {
@@ -168,6 +171,13 @@ export default function EditarCocheModal({
                 Calcinado
               </label>
             </div>
+            <textarea
+              value={observaciones}
+              onChange={(e) => setObservaciones(e.target.value)}
+              placeholder="Observaciones"
+              rows={2}
+              className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
+            />
           </div>
 
           {error && (

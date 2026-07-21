@@ -26,6 +26,13 @@ export default function CocheCard({
   const activo = !coche.fecha_salida;
   const tieneDeuda = coche.penalizacion > 0;
 
+  // La revisión de presencia se hace una vez por semana (los domingos).
+  // Si han pasado más de 7 días desde la última, se resalta como pendiente.
+  const revisionPendiente =
+    activo &&
+    (!coche.ultima_revision ||
+      Date.now() - new Date(coche.ultima_revision).getTime() > 7 * 24 * 60 * 60 * 1000);
+
   return (
     <div className="rounded-card border border-toro-line bg-toro-surface p-3 shadow-card sm:p-4">
       <div className="flex items-center gap-3 sm:gap-4">
@@ -77,7 +84,7 @@ export default function CocheCard({
           <button
             onClick={() => onTogglePresencia(coche.id, !coche.check_presencia)}
             aria-pressed={coche.check_presencia}
-            title="Marcar presencia en auditoría"
+            title="Marcar presencia en la revisión semanal (domingos)"
             className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
               coche.check_presencia
                 ? "bg-toro-okBg text-toro-ok"
@@ -118,7 +125,13 @@ export default function CocheCard({
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-toro-line pt-2 text-[11px] text-toro-slate">
         <span>Propios hasta <span className="tabular text-toro-ink">{fmtCorta(coche.fecha_fin_propios)}</span></span>
         <span>Mapfre hasta <span className="tabular text-toro-ink">{fmtCorta(coche.fecha_fin_mapfre)}</span></span>
-        <span>Revisado <span className="tabular text-toro-ink">{fmtCorta(coche.ultima_revision)}</span></span>
+        <span>
+          Revisado{" "}
+          <span className={`tabular ${revisionPendiente ? "font-medium text-toro-red" : "text-toro-ink"}`}>
+            {fmtCorta(coche.ultima_revision)}
+          </span>
+          {revisionPendiente && " · pendiente esta semana"}
+        </span>
         {coche.consigna && (
           <span>Consigna <span className="tabular text-toro-ink">{fmtCorta(coche.consigna)}</span></span>
         )}
