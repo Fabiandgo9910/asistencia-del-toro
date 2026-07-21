@@ -2,11 +2,12 @@
 
 import { Search, Download } from "lucide-react";
 
-export type FiltroPresencia = "presentes" | "no_presentes" | "todos";
+export type FiltroPresencia = "presentes" | "no_presentes" | "vencidos" | "todos";
 
 const OPCIONES: { valor: FiltroPresencia; etiqueta: string }[] = [
   { valor: "presentes", etiqueta: "Presentes" },
   { valor: "no_presentes", etiqueta: "No presentes" },
+  { valor: "vencidos", etiqueta: "Vencidos" },
   { valor: "todos", etiqueta: "Todos" },
 ];
 
@@ -50,16 +51,18 @@ export default function BuscadorBar({
           </button>
         </div>
 
-        {/* Filtro de presencia: presentes / no presentes / todos */}
-        <div className="flex w-full gap-1 rounded-card border border-toro-line bg-toro-surface p-1 shadow-card">
+        {/* Filtro: presentes / no presentes / con custodia vencida / todos */}
+        <div className="flex w-full gap-1 overflow-x-auto rounded-card border border-toro-line bg-toro-surface p-1 shadow-card">
           {OPCIONES.map((o) => (
             <button
               key={o.valor}
               onClick={() => onCambiarFiltro(o.valor)}
               aria-pressed={filtro === o.valor}
-              className={`flex-1 rounded-card py-1.5 text-xs font-medium transition ${
+              className={`flex-1 whitespace-nowrap rounded-card py-1.5 text-xs font-medium transition ${
                 filtro === o.valor
-                  ? "bg-toro-ink text-white"
+                  ? o.valor === "vencidos"
+                    ? "bg-toro-red text-white"
+                    : "bg-toro-ink text-white"
                   : "text-toro-slate hover:text-toro-ink"
               }`}
             >

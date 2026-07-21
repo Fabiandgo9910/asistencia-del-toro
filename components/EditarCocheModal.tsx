@@ -24,6 +24,7 @@ export default function EditarCocheModal({
   const [tieneLlave, setTieneLlave] = useState(true);
   const [calcinado, setCalcinado] = useState(false);
   const [observaciones, setObservaciones] = useState("");
+  const [fechaDestino, setFechaDestino] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [confirmarGuardar, setConfirmarGuardar] = useState(false);
   const [confirmarEliminar, setConfirmarEliminar] = useState(false);
@@ -41,6 +42,7 @@ export default function EditarCocheModal({
       setTieneLlave(coche.tiene_llave);
       setCalcinado(coche.esta_calcinado);
       setObservaciones(coche.observaciones ?? "");
+      setFechaDestino(coche.fecha_destino?.slice(0, 10) ?? "");
       setError(null);
     }
   }, [coche]);
@@ -64,6 +66,7 @@ export default function EditarCocheModal({
           tiene_llave: tieneLlave,
           esta_calcinado: calcinado,
           observaciones,
+          fecha_destino: fechaDestino || null,
         }),
       });
       if (res.ok) {
@@ -153,6 +156,24 @@ export default function EditarCocheModal({
                 className="rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
               />
             </label>
+            {!coche.fecha_salida && (
+              <>
+                <label className="flex items-center justify-between text-sm text-toro-slate">
+                  Fecha prevista de salida (destino)
+                  <input
+                    type="date"
+                    value={fechaDestino}
+                    onChange={(e) => setFechaDestino(e.target.value)}
+                    className="rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
+                  />
+                </label>
+                {fechaDestino && (
+                  <p className="text-[11px] text-toro-slate">
+                    Con destino asignado, la custodia se calculará hasta esa fecha, no hasta hoy.
+                  </p>
+                )}
+              </>
+            )}
             <div className="flex gap-2 pt-1">
               <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
                 <input

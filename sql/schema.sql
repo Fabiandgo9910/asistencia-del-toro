@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS coches (
   traslado           VARCHAR(255),
   empresa_traslado   VARCHAR(255),
   fecha_traslado     DATE,
-  consigna           DATE,
+  fecha_destino      DATE, -- fecha PREVISTA de salida (aún no ha salido, pero ya tiene destino asignado)
   matricula          VARCHAR(20) NOT NULL,
   modelo             VARCHAR(120),
   numero_expediente  VARCHAR(80),
@@ -18,6 +18,17 @@ CREATE TABLE IF NOT EXISTS coches (
   ultima_revision    TIMESTAMP,
   check_presencia    BOOLEAN NOT NULL DEFAULT true
 );
+
+-- Consignas: un coche puede tener varias a lo largo del tiempo, cada una
+-- con su propia fecha y una pequeña observación (sustituye a la antigua
+-- columna única "consigna" de coches).
+CREATE TABLE IF NOT EXISTS consignas (
+  id           SERIAL PRIMARY KEY,
+  coche_id     INTEGER NOT NULL REFERENCES coches(id) ON DELETE CASCADE,
+  fecha        DATE NOT NULL DEFAULT CURRENT_DATE,
+  observacion  VARCHAR(255)
+);
+CREATE INDEX IF NOT EXISTS idx_consignas_coche ON consignas (coche_id);
 
 -- Búsquedas rápidas por matrícula / expediente (buscador en tiempo real)
 CREATE INDEX IF NOT EXISTS idx_coches_matricula ON coches (matricula);

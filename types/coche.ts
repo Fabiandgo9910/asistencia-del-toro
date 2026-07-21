@@ -7,7 +7,7 @@ export type Coche = {
   traslado: string | null;
   empresa_traslado: string | null;
   fecha_traslado: string | null;
-  consigna: string | null; // fecha de la última consigna
+  fecha_destino: string | null; // fecha PREVISTA de salida (aún no ha salido)
   matricula: string;
   modelo: string | null;
   numero_expediente: string | null;
@@ -15,12 +15,21 @@ export type Coche = {
   observaciones: string | null;
   ultima_revision: string | null;
   check_presencia: boolean;
-  // Calculado en servidor (SQL) y recalculable en cliente:
+  // Calculado en servidor (SQL):
+  tiene_destino: boolean; // true si aún no salió pero ya tiene fecha_destino
+  ultima_consigna: string | null; // fecha de la consigna más reciente
   dias_totales: number;
   dias_extra: number;
   penalizacion: number;
   fecha_fin_propios: string; // vencen nuestros 3 días
   fecha_fin_mapfre: string; // vence la cobertura de Mapfre (día 12)
+};
+
+export type Consigna = {
+  id: number;
+  coche_id: number;
+  fecha: string;
+  observacion: string | null;
 };
 
 export type NuevoCochePayload = {

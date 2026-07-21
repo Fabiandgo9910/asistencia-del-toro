@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Key, Flame, LogOut, MapPin, Pencil, Truck } from "lucide-react";
+import { Key, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation } from "lucide-react";
 import MatriculaBadge from "./MatriculaBadge";
 import type { Coche } from "@/types/coche";
 
@@ -16,11 +16,13 @@ export default function CocheCard({
   onTogglePresencia,
   onPedirSalida,
   onEditar,
+  onConsignas,
 }: {
   coche: Coche;
   onTogglePresencia: (id: number, valor: boolean) => void;
   onPedirSalida: (coche: Coche) => void;
   onEditar: (coche: Coche) => void;
+  onConsignas: (coche: Coche) => void;
 }) {
   const [mostrarObs, setMostrarObs] = useState(false);
   const activo = !coche.fecha_salida;
@@ -99,10 +101,19 @@ export default function CocheCard({
           </span>
         )}
 
+        {/* Consignas */}
+        <button
+          onClick={() => onConsignas(coche)}
+          title="Historial de consignas"
+          className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
+        >
+          <ClipboardList size={14} />
+        </button>
+
         {/* Editar */}
         <button
           onClick={() => onEditar(coche)}
-          title="Editar matrícula / plaza / modelo"
+          title="Editar expediente"
           className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
         >
           <Pencil size={14} />
@@ -132,8 +143,13 @@ export default function CocheCard({
           </span>
           {revisionPendiente && " · pendiente esta semana"}
         </span>
-        {coche.consigna && (
-          <span>Consigna <span className="tabular text-toro-ink">{fmtCorta(coche.consigna)}</span></span>
+        {coche.ultima_consigna && (
+          <span>Última consigna <span className="tabular text-toro-ink">{fmtCorta(coche.ultima_consigna)}</span></span>
+        )}
+        {coche.tiene_destino && (
+          <span className="flex items-center gap-1 font-medium text-toro-ink">
+            <Navigation size={12} /> Destino <span className="tabular">{fmtCorta(coche.fecha_destino)}</span>
+          </span>
         )}
         {!activo && (
           <span className="flex items-center gap-1 text-toro-ok">

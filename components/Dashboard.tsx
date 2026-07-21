@@ -7,6 +7,7 @@ import CocheCard from "./CocheCard";
 import NuevaEntradaModal from "./NuevaEntradaModal";
 import SalidaModal from "./SalidaModal";
 import EditarCocheModal from "./EditarCocheModal";
+import ConsignasModal from "./ConsignasModal";
 import type { Coche } from "@/types/coche";
 
 export default function Dashboard() {
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const [modalAbierto, setModalAbierto] = useState(false);
   const [cocheParaSalida, setCocheParaSalida] = useState<Coche | null>(null);
   const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
+  const [cocheParaConsignas, setCocheParaConsignas] = useState<Coche | null>(null);
   // Por defecto solo se muestran los coches presentes, que es el caso de uso
   // más habitual (parking activo); el operario puede cambiarlo cuando quiera.
   const [filtro, setFiltro] = useState<FiltroPresencia>("presentes");
@@ -54,12 +56,14 @@ export default function Dashboard() {
   const visibles = coches.filter((c) => {
     if (filtro === "presentes") return c.check_presencia;
     if (filtro === "no_presentes") return !c.check_presencia;
+    if (filtro === "vencidos") return c.penalizacion > 0;
     return true;
   });
 
   const mensajeVacio = {
     presentes: "Ningún coche presente coincide con la búsqueda.",
     no_presentes: "Ningún coche marcado como ausente coincide con la búsqueda.",
+    vencidos: "Ningún coche tiene la custodia vencida ahora mismo.",
     todos: `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`,
   }[filtro];
 
@@ -97,6 +101,7 @@ export default function Dashboard() {
               onTogglePresencia={togglePresencia}
               onPedirSalida={setCocheParaSalida}
               onEditar={setCocheParaEditar}
+              onConsignas={setCocheParaConsignas}
             />
           ))}
         </div>
@@ -128,6 +133,12 @@ export default function Dashboard() {
         onCerrar={() => setCocheParaEditar(null)}
         onGuardado={() => cargar(query)}
         onEliminado={() => cargar(query)}
+      />
+
+      <ConsignasModal
+        coche={cocheParaConsignas}
+        onCerrar={() => setCocheParaConsignas(null)}
+        onCambio={() => cargar(query)}
       />
     </main>
   );
