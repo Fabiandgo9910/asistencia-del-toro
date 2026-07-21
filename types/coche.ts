@@ -4,6 +4,7 @@ export type Coche = {
   fecha_entrada: string; // ISO date
   tiene_llave: boolean;
   esta_calcinado: boolean;
+  bloqueado: boolean;
   traslado: string | null;
   empresa_traslado: string | null;
   fecha_traslado: string | null;

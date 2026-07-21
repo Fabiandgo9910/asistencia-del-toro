@@ -23,6 +23,7 @@ export default function EditarCocheModal({
   const [fecha, setFecha] = useState("");
   const [tieneLlave, setTieneLlave] = useState(true);
   const [calcinado, setCalcinado] = useState(false);
+  const [bloqueado, setBloqueado] = useState(false);
   const [observaciones, setObservaciones] = useState("");
   const [fechaDestino, setFechaDestino] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -41,6 +42,7 @@ export default function EditarCocheModal({
       setFecha(coche.fecha_entrada?.slice(0, 10) ?? "");
       setTieneLlave(coche.tiene_llave);
       setCalcinado(coche.esta_calcinado);
+      setBloqueado(coche.bloqueado);
       setObservaciones(coche.observaciones ?? "");
       setFechaDestino(coche.fecha_destino?.slice(0, 10) ?? "");
       setError(null);
@@ -65,6 +67,7 @@ export default function EditarCocheModal({
           fecha_entrada: fecha,
           tiene_llave: tieneLlave,
           esta_calcinado: calcinado,
+          bloqueado,
           observaciones,
           fecha_destino: fechaDestino || null,
         }),
@@ -174,7 +177,7 @@ export default function EditarCocheModal({
                 )}
               </>
             )}
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-wrap gap-2 pt-1">
               <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
                 <input
                   type="checkbox"
@@ -189,7 +192,15 @@ export default function EditarCocheModal({
                   checked={calcinado}
                   onChange={(e) => setCalcinado(e.target.checked)}
                 />
-                Calcinado
+                Está calcinado
+              </label>
+              <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
+                <input
+                  type="checkbox"
+                  checked={bloqueado}
+                  onChange={(e) => setBloqueado(e.target.checked)}
+                />
+                Bloqueado
               </label>
             </div>
             <textarea

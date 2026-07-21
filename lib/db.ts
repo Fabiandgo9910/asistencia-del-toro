@@ -39,9 +39,13 @@ function sql(query: string, params?: unknown[]) {
 // - fecha_fin_mapfre: día en que se agota la cobertura de Mapfre (día 12).
 // - tiene_destino: true si aún no ha salido pero ya hay fecha prevista.
 // - ultima_consigna: fecha de la consigna más reciente (tabla consignas).
+//
+// NOTA: este fragmento se usa tal cual para una sola fila (obtenerCoche) y
+// también envuelto en un WITH ... para poder filtrar por columnas
+// calculadas (dias_extra, penalizacion, etc.) en listarCoches/exportar.
 const SELECT_CON_CALCULO = `
   SELECT
-    c.id, c.plaza, c.fecha_entrada, c.tiene_llave, c.esta_calcinado, c.traslado,
+    c.id, c.plaza, c.fecha_entrada, c.tiene_llave, c.esta_calcinado, c.bloqueado, c.traslado,
     c.empresa_traslado, c.fecha_traslado, c.fecha_destino, c.matricula, c.modelo,
     c.numero_expediente, c.fecha_salida, c.observaciones, c.ultima_revision, c.check_presencia,
     (c.fecha_salida IS NULL AND c.fecha_destino IS NOT NULL) AS tiene_destino,
@@ -78,16 +82,30 @@ const SELECT_CON_CALCULO = `
   FROM coches c
 `;
 
-export async function buscarCoches(query: string): Promise<Coche[]> {
-  const like = `%${query.trim().toUpperCase()}%`;
+// Helper: lista de coches con el cálculo aplicado, pudiendo filtrar por
+// columnas calculadas (dias_extra, penalizacion, fecha_salida...) gracias
+// al WITH. Siempre ordenado por fecha de entrada, del más antiguo primero.
+async function listarConCalculo(
+  condicion: string,
+  params: unknown[]
+): Promise<Coche[]> {
   const rows = await sql(
-    `${SELECT_CON_CALCULO}
-     WHERE ($1 = '' OR c.matricula ILIKE $1 OR c.numero_expediente ILIKE $1 OR c.modelo ILIKE $1)
-     ORDER BY (c.fecha_salida IS NOT NULL), c.fecha_entrada DESC
-     LIMIT 200`,
-    [query.trim() === "" ? "" : like]
+    `WITH base AS (${SELECT_CON_CALCULO})
+     SELECT * FROM base
+     WHERE ${condicion}
+     ORDER BY fecha_entrada ASC`,
+    params
   );
   return rows as Coche[];
+}
+
+export async function buscarCoches(query: string): Promise<Coche[]> {
+  const q = query.trim();
+  const like = `%${q.toUpperCase()}%`;
+  return listarConCalculo(
+    `($1 = '' OR matricula ILIKE $1 OR numero_expediente ILIKE $1 OR modelo ILIKE $1)`,
+    [q === "" ? "" : like]
+  );
 }
 
 export async function obtenerCoche(id: number): Promise<Coche | null> {
@@ -103,12 +121,14 @@ export async function crearCoche(data: {
   numero_expediente: string | null;
   tiene_llave: boolean;
   esta_calcinado: boolean;
+  bloqueado: boolean;
+  fecha_destino: string | null;
   observaciones: string | null;
 }) {
   const rows = await sql(
     `INSERT INTO coches
-      (plaza, fecha_entrada, matricula, modelo, numero_expediente, tiene_llave, esta_calcinado, observaciones, check_presencia, ultima_revision)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, NOW())
+      (plaza, fecha_entrada, matricula, modelo, numero_expediente, tiene_llave, esta_calcinado, bloqueado, fecha_destino, observaciones, check_presencia, ultima_revision)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, true, NOW())
      RETURNING id`,
     [
       data.plaza,
@@ -118,6 +138,8 @@ export async function crearCoche(data: {
       data.numero_expediente,
       data.tiene_llave,
       data.esta_calcinado,
+      data.bloqueado,
+      data.fecha_destino,
       data.observaciones,
     ]
   );
@@ -173,24 +195,31 @@ export async function eliminarCoche(id: number) {
   await sql(`DELETE FROM coches WHERE id = $1`, [id]);
 }
 
-// Solo para exportar: coches que todavía NO han salido (fecha_salida NULL).
-// Admite filtrar además por matrícula/expediente/modelo si se pasa query.
-export async function activosParaExportar(query?: string): Promise<Coche[]> {
+// --- Exportación ---
+// El operario elige uno de estos tres filtros a la hora de exportar:
+//   - vencidos:   coches con custodia ya vencida (penalización > 0)
+//   - con_salida: coches que YA tienen fecha de salida real
+//   - presentes:  coches que todavía siguen en la base (no han salido)
+export type FiltroExportacion = "vencidos" | "con_salida" | "presentes";
+
+export async function exportarPorFiltro(
+  filtro: FiltroExportacion,
+  query?: string
+): Promise<Coche[]> {
   const q = (query ?? "").trim();
   const like = `%${q.toUpperCase()}%`;
-  const rows = await sql(
-    `${SELECT_CON_CALCULO}
-     WHERE c.fecha_salida IS NULL
-       AND ($1 = '' OR c.matricula ILIKE $1 OR c.numero_expediente ILIKE $1 OR c.modelo ILIKE $1)
-     ORDER BY c.plaza NULLS LAST, c.fecha_entrada DESC`,
+
+  const condicionFiltro =
+    filtro === "vencidos"
+      ? "penalizacion > 0"
+      : filtro === "con_salida"
+      ? "fecha_salida IS NOT NULL"
+      : "fecha_salida IS NULL"; // presentes
+
+  return listarConCalculo(
+    `${condicionFiltro} AND ($1 = '' OR matricula ILIKE $1 OR numero_expediente ILIKE $1 OR modelo ILIKE $1)`,
     [q === "" ? "" : like]
   );
-  return rows as Coche[];
-}
-
-export async function todosParaExportar(): Promise<Coche[]> {
-  const rows = await sql(`${SELECT_CON_CALCULO} ORDER BY c.fecha_entrada DESC`);
-  return rows as Coche[];
 }
 
 // --- Consignas: varias por coche, cada una con su fecha y observación ---

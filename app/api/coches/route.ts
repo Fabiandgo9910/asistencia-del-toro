@@ -33,6 +33,8 @@ export async function POST(req: NextRequest) {
       numero_expediente: body.numero_expediente ?? null,
       tiene_llave: Boolean(body.tiene_llave),
       esta_calcinado: Boolean(body.esta_calcinado),
+      bloqueado: Boolean(body.bloqueado),
+      fecha_destino: body.fecha_destino || null,
       observaciones: body.observaciones ?? null,
     });
     return NextResponse.json({ id }, { status: 201 });

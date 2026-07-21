@@ -2,12 +2,13 @@
 
 import { Search, Download } from "lucide-react";
 
-export type FiltroPresencia = "presentes" | "no_presentes" | "vencidos" | "todos";
+export type FiltroPresencia = "presentes" | "no_presentes" | "vencidos" | "con_salida" | "todos";
 
 const OPCIONES: { valor: FiltroPresencia; etiqueta: string }[] = [
   { valor: "presentes", etiqueta: "Presentes" },
   { valor: "no_presentes", etiqueta: "No presentes" },
   { valor: "vencidos", etiqueta: "Vencidos" },
+  { valor: "con_salida", etiqueta: "Con fecha de salida" },
   { valor: "todos", etiqueta: "Todos" },
 ];
 
@@ -44,21 +45,21 @@ export default function BuscadorBar({
           <button
             onClick={onExportar}
             className="flex items-center gap-1.5 rounded-card border border-toro-line bg-toro-surface px-3 py-2.5 text-sm text-toro-slate shadow-card transition hover:text-toro-ink"
-            title="Exportar a Excel"
+            title="Exportar"
           >
             <Download size={16} />
             <span className="hidden sm:inline">Exportar</span>
           </button>
         </div>
 
-        {/* Filtro: presentes / no presentes / con custodia vencida / todos */}
+        {/* Filtro: presentes / no presentes / con custodia vencida / con salida / todos */}
         <div className="flex w-full gap-1 overflow-x-auto rounded-card border border-toro-line bg-toro-surface p-1 shadow-card">
           {OPCIONES.map((o) => (
             <button
               key={o.valor}
               onClick={() => onCambiarFiltro(o.valor)}
               aria-pressed={filtro === o.valor}
-              className={`flex-1 whitespace-nowrap rounded-card py-1.5 text-xs font-medium transition ${
+              className={`flex-1 whitespace-nowrap rounded-card px-2 py-1.5 text-xs font-medium transition ${
                 filtro === o.valor
                   ? o.valor === "vencidos"
                     ? "bg-toro-red text-white"

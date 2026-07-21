@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS coches (
   empresa_traslado   VARCHAR(255),
   fecha_traslado     DATE,
   fecha_destino      DATE, -- fecha PREVISTA de salida (aún no ha salido, pero ya tiene destino asignado)
+  bloqueado          BOOLEAN NOT NULL DEFAULT false,
   matricula          VARCHAR(20) NOT NULL,
   modelo             VARCHAR(120),
   numero_expediente  VARCHAR(80),

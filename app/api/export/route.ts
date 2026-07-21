@@ -1,81 +1,133 @@
 import { NextRequest, NextResponse } from "next/server";
-import ExcelJS from "exceljs";
-import { activosParaExportar } from "@/lib/db";
+import PDFDocument from "pdfkit";
+import { exportarPorFiltro, type FiltroExportacion } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 const fmtFecha = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-ES") : "";
 
+// Ancho de cada columna en puntos (pt), en el mismo orden que la hoja base:
+// PLAZA | LL | EXPEDIENTE | VEHÍCULO | MATRICULA | FECHA | DESTINO | CONSIGNA | FECHA
 const COLUMNAS = [
-  { header: "PLAZA", width: 8 },
-  { header: "LL", width: 6 },
-  { header: "EXPEDIENTE", width: 16 },
-  { header: "VEHÍCULO", width: 22 },
-  { header: "MATRICULA", width: 14 },
-  { header: "FECHA", width: 12 },
-  { header: "DESTINO", width: 22 },
-  { header: "CONSIGNA", width: 10 },
-  { header: "FECHA", width: 12 },
+  { titulo: "PLAZA", ancho: 45 },
+  { titulo: "LL", ancho: 30 },
+  { titulo: "EXPEDIENTE", ancho: 85 },
+  { titulo: "VEHÍCULO", ancho: 130 },
+  { titulo: "MATRICULA", ancho: 80 },
+  { titulo: "FECHA", ancho: 65 },
+  { titulo: "DESTINO", ancho: 130 },
+  { titulo: "CONSIGNA", ancho: 60 },
+  { titulo: "FECHA", ancho: 65 },
 ];
 
-const BORDE_FINO: Partial<ExcelJS.Borders> = {
-  top: { style: "thin" },
-  left: { style: "thin" },
-  bottom: { style: "thin" },
-  right: { style: "thin" },
-};
+function dibujarFilaTabla(
+  doc: PDFKit.PDFDocument,
+  y: number,
+  valores: string[],
+  x0: number,
+  opciones: { negrita?: boolean; relleno?: boolean; alturaFila?: number } = {}
+) {
+  const { negrita = false, relleno = false, alturaFila = 18 } = opciones;
+  let x = x0;
 
-// GET /api/export?q=opcional -> descarga .xlsx
-// Solo incluye coches que TODAVÍA NO han salido (fecha_salida IS NULL),
-// con el mismo formato exacto que la hoja base en papel:
-// PLAZA | LL | EXPEDIENTE | VEHÍCULO | MATRICULA | FECHA | DESTINO | CONSIGNA | FECHA
-// (con sus bordes, negritas y cabecera sombreada, igual que el modelo original)
+  if (relleno) {
+    doc.rect(x0, y, COLUMNAS.reduce((s, c) => s + c.ancho, 0), alturaFila).fill("#E7E7E7");
+    doc.fillColor("#000000");
+  }
+
+  doc.font(negrita ? "Helvetica-Bold" : "Helvetica").fontSize(8);
+
+  COLUMNAS.forEach((col, i) => {
+    doc.rect(x, y, col.ancho, alturaFila).stroke();
+    doc.text(valores[i] ?? "", x + 3, y + alturaFila / 2 - 4, {
+      width: col.ancho - 6,
+      height: alturaFila - 4,
+      align: i === 3 || i === 6 ? "left" : "center",
+      lineBreak: false,
+      ellipsis: true,
+    });
+    x += col.ancho;
+  });
+
+  return y + alturaFila;
+}
+
+// GET /api/export?filtro=vencidos|con_salida|presentes&q=opcional
+// Genera un PDF (no un .xlsx) con el mismo formato exacto que la hoja base
+// en papel: PLAZA | LL | EXPEDIENTE | VEHÍCULO | MATRICULA | FECHA | DESTINO
+// | CONSIGNA | FECHA. Se sirve con Content-Disposition "inline" para que el
+// navegador lo abra directamente en su visor de PDF (con sus propios
+// botones de descargar/imprimir), en vez de forzar una descarga.
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q") ?? "";
+  const filtroParam = req.nextUrl.searchParams.get("filtro");
+  const filtro: FiltroExportacion =
+    filtroParam === "vencidos" || filtroParam === "con_salida" ? filtroParam : "presentes";
+
+  const tituloFiltro = {
+    vencidos: "COCHES CON CUSTODIA VENCIDA",
+    con_salida: "COCHES CON FECHA DE SALIDA",
+    presentes: "COCHES EN BASE (PRESENTES)",
+  }[filtro];
 
   try {
-    const coches = await activosParaExportar(q);
+    const coches = await exportarPorFiltro(filtro, q);
 
-    const libro = new ExcelJS.Workbook();
-    const hoja = libro.addWorksheet("Hoja base", {
-      pageSetup: { orientation: "landscape", fitToPage: true },
+    const doc = new PDFDocument({ size: "A4", layout: "landscape", margin: 30 });
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+    const fin = new Promise<Buffer>((resolve) => {
+      doc.on("end", () => resolve(Buffer.concat(chunks)));
     });
 
-    hoja.columns = COLUMNAS.map((c) => ({ width: c.width }));
+    const x0 = doc.page.margins.left;
+    let y = doc.page.margins.top;
 
-    // Nota de custodia, fusionada en todo el ancho de la tabla
-    hoja.mergeCells(1, 1, 1, COLUMNAS.length);
-    const filaNota1 = hoja.getCell(1, 1);
-    filaNota1.value =
-      "LA CUSTODIA DE MAPFRE SON 9 DÍAS + 3 NUESTROS / EL EXCESO DE CUSTODIA SON 13€ X DIA";
-    filaNota1.font = { bold: true, size: 10 };
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(11)
+      .text(tituloFiltro, x0, y);
+    y += 16;
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(9)
+      .text(
+        "LA CUSTODIA DE MAPFRE SON 9 DÍAS + 3 NUESTROS / EL EXCESO DE CUSTODIA SON 13€ X DIA",
+        x0,
+        y
+      );
+    y += 13;
+    doc
+      .font("Helvetica")
+      .fontSize(9)
+      .text(`ÚLTIMA REVISIÓN DE VH EN BASE - FECHA: ${new Date().toLocaleDateString("es-ES")}`, x0, y);
+    y += 20;
 
-    hoja.mergeCells(2, 1, 2, COLUMNAS.length);
-    const filaNota2 = hoja.getCell(2, 1);
-    filaNota2.value = `ÚLTIMA REVISIÓN DE VH EN BASE - FECHA: ${new Date().toLocaleDateString("es-ES")}`;
-    filaNota2.font = { size: 10 };
+    y = dibujarFilaTabla(
+      doc,
+      y,
+      COLUMNAS.map((c) => c.titulo),
+      x0,
+      { negrita: true, relleno: true }
+    );
 
-    // Fila 3 en blanco, como en el original
-    const filaCabecera = hoja.getRow(4);
-    COLUMNAS.forEach((c, i) => {
-      const celda = filaCabecera.getCell(i + 1);
-      celda.value = c.header;
-      celda.font = { bold: true };
-      celda.alignment = { horizontal: "center", vertical: "middle" };
-      celda.border = BORDE_FINO;
-      celda.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFE7E7E7" },
-      };
-    });
-    filaCabecera.height = 20;
+    for (const c of coches) {
+      // Salto de página si no cabe otra fila
+      if (y + 18 > doc.page.height - doc.page.margins.bottom) {
+        doc.addPage({ size: "A4", layout: "landscape", margin: 30 });
+        y = doc.page.margins.top;
+        y = dibujarFilaTabla(
+          doc,
+          y,
+          COLUMNAS.map((col) => col.titulo),
+          x0,
+          { negrita: true, relleno: true }
+        );
+      }
 
-    coches.forEach((c, i) => {
-      const fila = hoja.getRow(5 + i);
-      const valores = [
-        c.plaza ?? "",
+      y = dibujarFilaTabla(doc, y, [
+        c.plaza != null ? String(c.plaza) : "",
         c.tiene_llave ? "X" : "",
         c.numero_expediente ?? "",
         c.modelo ?? "",
@@ -84,27 +136,25 @@ export async function GET(req: NextRequest) {
         c.traslado ?? "",
         c.ultima_consigna ? "Sí" : "",
         fmtFecha(c.ultima_consigna),
-      ];
-      valores.forEach((valor, col) => {
-        const celda = fila.getCell(col + 1);
-        celda.value = valor;
-        celda.border = BORDE_FINO;
-        celda.alignment = {
-          horizontal: col === 3 || col === 6 ? "left" : "center",
-          vertical: "middle",
-        };
-      });
-    });
+      ], x0);
+    }
 
-    const buffer = await libro.xlsx.writeBuffer();
+    if (coches.length === 0) {
+      doc.font("Helvetica").fontSize(9).text("No hay coches para este filtro.", x0, y + 8);
+    }
 
-    return new NextResponse(buffer, {
+    doc.end();
+    const buffer = await fin;
+
+    return new NextResponse(new Uint8Array(buffer), {
       status: 200,
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="hoja-base-${new Date()
+        "Content-Type": "application/pdf",
+        // "inline" -> el navegador lo abre en su propio visor de PDF,
+        // con botones de descargar e imprimir, en vez de forzar la descarga.
+        "Content-Disposition": `inline; filename="hoja-base-${filtro}-${new Date()
           .toISOString()
-          .slice(0, 10)}.xlsx"`,
+          .slice(0, 10)}.pdf"`,
       },
     });
   } catch (err) {

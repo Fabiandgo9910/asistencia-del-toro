@@ -8,6 +8,7 @@ import NuevaEntradaModal from "./NuevaEntradaModal";
 import SalidaModal from "./SalidaModal";
 import EditarCocheModal from "./EditarCocheModal";
 import ConsignasModal from "./ConsignasModal";
+import ExportarModal, { type FiltroExportacion } from "./ExportarModal";
 import type { Coche } from "@/types/coche";
 
 export default function Dashboard() {
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [cocheParaSalida, setCocheParaSalida] = useState<Coche | null>(null);
   const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
   const [cocheParaConsignas, setCocheParaConsignas] = useState<Coche | null>(null);
+  const [exportarAbierto, setExportarAbierto] = useState(false);
   // Por defecto solo se muestran los coches presentes, que es el caso de uso
   // más habitual (parking activo); el operario puede cambiarlo cuando quiera.
   const [filtro, setFiltro] = useState<FiltroPresencia>("presentes");
@@ -49,14 +51,19 @@ export default function Dashboard() {
     });
   };
 
-  const exportar = () => {
-    window.location.href = `/api/export?q=${encodeURIComponent(query)}`;
+  // Exportar ahora es de 2 pasos: se elige el filtro en ExportarModal y
+  // desde ahí se abre el PDF resultante en una pestaña nueva.
+  const elegirExportacion = (filtroExport: FiltroExportacion) => {
+    const url = `/api/export?filtro=${filtroExport}&q=${encodeURIComponent(query)}`;
+    window.open(url, "_blank");
+    setExportarAbierto(false);
   };
 
   const visibles = coches.filter((c) => {
     if (filtro === "presentes") return c.check_presencia;
     if (filtro === "no_presentes") return !c.check_presencia;
     if (filtro === "vencidos") return c.penalizacion > 0;
+    if (filtro === "con_salida") return !!c.fecha_salida;
     return true;
   });
 
@@ -64,16 +71,17 @@ export default function Dashboard() {
     presentes: "Ningún coche presente coincide con la búsqueda.",
     no_presentes: "Ningún coche marcado como ausente coincide con la búsqueda.",
     vencidos: "Ningún coche tiene la custodia vencida ahora mismo.",
+    con_salida: "Ningún coche con fecha de salida coincide con la búsqueda.",
     todos: `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`,
   }[filtro];
 
   return (
     <>
-      <main className="min-h-screen pb-24">
+      <main className="min-h-screen pb-28">
         <BuscadorBar
           valor={query}
           onChange={setQuery}
-          onExportar={exportar}
+          onExportar={() => setExportarAbierto(true)}
           filtro={filtro}
           onCambiarFiltro={setFiltro}
         />
@@ -108,10 +116,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Botón flotante - Nueva entrada, siempre a mano */}
+        {/* Botón flotante - Nueva entrada, siempre a mano. Se deja sitio
+            encima del footer fijo para que nunca se solapen. */}
         <button
           onClick={() => setModalAbierto(true)}
-          className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-toro-red text-white shadow-lg transition hover:bg-toro-redDark sm:h-16 sm:w-16"
+          className="fixed bottom-16 right-5 flex h-14 w-14 items-center justify-center rounded-full bg-toro-red text-white shadow-lg transition hover:bg-toro-redDark sm:bottom-20 sm:h-16 sm:w-16"
           title="Registrar entrada"
         >
           <Plus size={26} />
@@ -141,14 +150,19 @@ export default function Dashboard() {
           onCerrar={() => setCocheParaConsignas(null)}
           onCambio={() => cargar(query)}
         />
+
+        <ExportarModal
+          abierto={exportarAbierto}
+          onCerrar={() => setExportarAbierto(false)}
+          onElegir={elegirExportacion}
+        />
       </main>
-      <footer>
-        © 2026 Asistencia del Toro · Sistema Interno
-        <div>
-          By Fabian D
-        </div>
+
+      {/* Barra fija abajo, discreta, que no tapa ni el contenido ni el
+          botón flotante (que se colocó más arriba, en bottom-16/20). */}
+      <footer className="fixed inset-x-0 bottom-0 z-10 border-t border-toro-line bg-toro-bg/95 py-1.5 text-center text-[10px] text-toro-slate backdrop-blur">
+        © 2026 Asistencia del Toro · Sistema Interno · By Fabian D
       </footer>
     </>
-
   );
 }
