@@ -9,6 +9,7 @@ import SalidaModal from "./SalidaModal";
 import EditarCocheModal from "./EditarCocheModal";
 import ConsignasModal from "./ConsignasModal";
 import ExportarModal, { type FiltroExportacion } from "./ExportarModal";
+import { estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
 
 export default function Dashboard() {
@@ -62,16 +63,19 @@ export default function Dashboard() {
   const visibles = coches.filter((c) => {
     if (filtro === "presentes") return c.check_presencia;
     if (filtro === "no_presentes") return !c.check_presencia;
-    if (filtro === "vencidos") return c.penalizacion > 0;
-    if (filtro === "con_salida") return !!c.fecha_salida;
+    if (filtro === "vencidos") {
+      const activo = !c.fecha_salida;
+      return c.penalizacion > 0 || estaProximoAVencer(c.dias_totales, c.dias_extra, activo);
+    }
+    if (filtro === "con_salida") return c.tiene_destino;
     return true;
   });
 
   const mensajeVacio = {
     presentes: "Ningún coche presente coincide con la búsqueda.",
     no_presentes: "Ningún coche marcado como ausente coincide con la búsqueda.",
-    vencidos: "Ningún coche tiene la custodia vencida ahora mismo.",
-    con_salida: "Ningún coche con fecha de salida coincide con la búsqueda.",
+    vencidos: "Ningún coche está vencido ni a punto de vencer ahora mismo.",
+    con_salida: "Ningún coche con fecha de salida prevista coincide con la búsqueda.",
     todos: `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`,
   }[filtro];
 

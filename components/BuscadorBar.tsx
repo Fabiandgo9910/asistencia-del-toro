@@ -8,7 +8,7 @@ const OPCIONES: { valor: FiltroPresencia; etiqueta: string }[] = [
   { valor: "presentes", etiqueta: "Presentes" },
   { valor: "no_presentes", etiqueta: "No presentes" },
   { valor: "vencidos", etiqueta: "Vencidos" },
-  { valor: "con_salida", etiqueta: "Con fecha de salida" },
+  { valor: "con_salida", etiqueta: "Con salida prevista" },
   { valor: "todos", etiqueta: "Todos" },
 ];
 

@@ -16,6 +16,8 @@ const config: Config = {
           ok: "#3F7D52",        // verde apagado, presencia confirmada
           okBg: "#EAF3EC",
           warnBg: "#FBEAEA",
+          amber: "#8A6116",     // texto de aviso "próximo a vencer" (amarillo/ámbar)
+          amberBg: "#FBF2DA",
         },
       },
       fontFamily: {

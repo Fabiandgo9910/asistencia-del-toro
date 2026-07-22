@@ -3,15 +3,14 @@
 import { useState } from "react";
 import { Key, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle } from "lucide-react";
 import MatriculaBadge from "./MatriculaBadge";
+import { diasParaVencer as calcDiasParaVencer, estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
 
-const fmtCorta = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit" }) : "—";
-
-const fmtCompleta = (iso: string | null) =>
+// Todas las fechas se muestran completas: día, mes y año.
+const fmtFecha = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—";
 
-const fmtLarga = (iso: string | null) =>
+const fmtFechaHora = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
 export default function CocheCard({
@@ -39,9 +38,9 @@ export default function CocheCard({
       Date.now() - new Date(coche.ultima_revision).getTime() > 7 * 24 * 60 * 60 * 1000);
 
   // A punto de vencerse la custodia: aún no vencida (sin días extra) pero a
-  // 2 días o menos del día 12 -> aviso para adelantarse con la consigna.
-  const diasParaVencer = coche.dias_extra === 0 ? 12 - coche.dias_totales : null;
-  const proximoAVencer = activo && diasParaVencer !== null && diasParaVencer <= 2 && diasParaVencer >= 0;
+  // 2 días o menos del día 12 -> aviso amarillo para adelantarse con la consigna.
+  const diasParaVencer = calcDiasParaVencer(coche.dias_totales, coche.dias_extra);
+  const proximoAVencer = estaProximoAVencer(coche.dias_totales, coche.dias_extra, activo);
 
   return (
     <div className={`rounded-card border bg-toro-surface p-3 shadow-card sm:p-4 ${coche.bloqueado ? "border-toro-red/40" : "border-toro-line"}`}>
@@ -153,24 +152,24 @@ export default function CocheCard({
 
       {/* Toda la info detallada, siempre visible a primera vista */}
       <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-toro-line pt-2 text-[11px] text-toro-slate">
-        <span>Entrada <span className="tabular text-toro-ink">{fmtCompleta(coche.fecha_entrada)}</span></span>
-        <span>Propios hasta <span className="tabular text-toro-ink">{fmtCorta(coche.fecha_fin_propios)}</span></span>
-        <span>Mapfre hasta <span className="tabular text-toro-ink">{fmtCorta(coche.fecha_fin_mapfre)}</span></span>
+        <span>Entrada <span className="tabular text-toro-ink">{fmtFecha(coche.fecha_entrada)}</span></span>
+        <span>Propios hasta <span className="tabular text-toro-ink">{fmtFecha(coche.fecha_fin_propios)}</span></span>
+        <span>Mapfre hasta <span className="tabular text-toro-ink">{fmtFecha(coche.fecha_fin_mapfre)}</span></span>
         <span>
           Revisado{" "}
           <span className={`tabular ${revisionPendiente ? "font-medium text-toro-red" : "text-toro-ink"}`}>
-            {fmtCorta(coche.ultima_revision)}
+            {fmtFecha(coche.ultima_revision)}
           </span>
           {revisionPendiente && " · pendiente esta semana"}
         </span>
         {coche.tiene_destino && (
           <span className="flex items-center gap-1 font-medium text-toro-ink">
-            <Navigation size={12} /> Destino <span className="tabular">{fmtCorta(coche.fecha_destino)}</span>
+            <Navigation size={12} /> Destino <span className="tabular">{fmtFecha(coche.fecha_destino)}</span>
           </span>
         )}
         {!activo && (
           <span className="flex items-center gap-1 text-toro-ok">
-            Salió <span className="tabular">{fmtLarga(coche.fecha_salida)}</span>
+            Salió <span className="tabular">{fmtFechaHora(coche.fecha_salida)}</span>
           </span>
         )}
         {!activo && coche.traslado && (
@@ -185,11 +184,11 @@ export default function CocheCard({
         <div className="mt-2 flex flex-wrap gap-1.5">
           {coche.ultima_consigna && (
             <span className="flex items-center gap-1 rounded-full bg-toro-okBg px-2 py-0.5 text-[11px] font-medium text-toro-ok">
-              <CheckCircle2 size={11} /> Consigna hecha · {fmtCorta(coche.ultima_consigna)}
+              <CheckCircle2 size={11} /> Consigna hecha · {fmtFecha(coche.ultima_consigna)}
             </span>
           )}
           {proximoAVencer && (
-            <span className="flex items-center gap-1 rounded-full bg-toro-warnBg px-2 py-0.5 text-[11px] font-medium text-toro-red">
+            <span className="flex items-center gap-1 rounded-full bg-toro-amberBg px-2 py-0.5 text-[11px] font-medium text-toro-amber">
               <AlertTriangle size={11} />
               {diasParaVencer === 0 ? "Vence hoy (día 12)" : `Vence en ${diasParaVencer} día${diasParaVencer === 1 ? "" : "s"}`}
             </span>

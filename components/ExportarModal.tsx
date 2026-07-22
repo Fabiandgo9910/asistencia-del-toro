@@ -12,14 +12,14 @@ const OPCIONES: {
 }[] = [
   {
     valor: "vencidos",
-    etiqueta: "Vencidos",
-    descripcion: "Coches con la custodia ya vencida (pendientes de consigna).",
+    etiqueta: "Vencidos y a punto de vencer",
+    descripcion: "Custodia ya vencida, o a 2 días o menos de vencerse (para adelantar consignas).",
     icono: FileWarning,
   },
   {
     valor: "con_salida",
-    etiqueta: "Con fecha de salida",
-    descripcion: "Coches que ya tienen registrada una salida real.",
+    etiqueta: "Con salida prevista",
+    descripcion: "Coches que ya tienen una fecha prevista de salida, pero aún no han salido.",
     icono: Truck,
   },
   {

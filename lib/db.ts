@@ -197,10 +197,16 @@ export async function eliminarCoche(id: number) {
 
 // --- Exportación ---
 // El operario elige uno de estos tres filtros a la hora de exportar:
-//   - vencidos:   coches con custodia ya vencida (penalización > 0)
-//   - con_salida: coches que YA tienen fecha de salida real
+//   - vencidos:   coches con custodia ya vencida O a punto de vencer (día
+//                 12 a 2 días vista o menos), para priorizar consignas.
+//   - con_salida: coches que tienen una fecha PREVISTA de salida asignada
+//                 (tiene_destino) pero todavía no han salido de verdad.
 //   - presentes:  coches que todavía siguen en la base (no han salido)
 export type FiltroExportacion = "vencidos" | "con_salida" | "presentes";
+
+// "Próximo a vencer": sin días extra todavía, pero a 2 días o menos del
+// día 12 (mismo criterio que se usa en la tarjeta, ver lib/penalizacion.ts).
+const CONDICION_PROXIMO_A_VENCER = "(dias_extra = 0 AND (12 - dias_totales) BETWEEN 0 AND 2)";
 
 export async function exportarPorFiltro(
   filtro: FiltroExportacion,
@@ -211,9 +217,9 @@ export async function exportarPorFiltro(
 
   const condicionFiltro =
     filtro === "vencidos"
-      ? "penalizacion > 0"
+      ? `(penalizacion > 0 OR ${CONDICION_PROXIMO_A_VENCER})`
       : filtro === "con_salida"
-      ? "fecha_salida IS NOT NULL"
+      ? "tiene_destino = true"
       : "fecha_salida IS NULL"; // presentes
 
   return listarConCalculo(

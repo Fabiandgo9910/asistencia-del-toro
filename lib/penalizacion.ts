@@ -44,3 +44,18 @@ export function calcularPenalizacion(fechaEntrada: string, fechaSalida: string |
     fecha_fin_mapfre: sumarDias(fechaEntrada, DIAS_CUBIERTOS), // vence la cobertura de Mapfre (día 12)
   };
 }
+
+// Días que faltan para llegar al día 12 (cuando aún no está vencido).
+// Devuelve null si ya está vencido (no tiene sentido "faltar" días).
+export function diasParaVencer(diasTotales: number, diasExtra: number): number | null {
+  return diasExtra === 0 ? DIAS_CUBIERTOS - diasTotales : null;
+}
+
+// "Próximo a vencer": todavía no genera penalización, pero está a 2 días
+// o menos del día 12. Se usa igual en la tarjeta y en el filtro "Vencidos"
+// (que también quiere ver los que están a punto).
+export function estaProximoAVencer(diasTotales: number, diasExtra: number, activo: boolean): boolean {
+  if (!activo) return false;
+  const faltan = diasParaVencer(diasTotales, diasExtra);
+  return faltan !== null && faltan <= 2 && faltan >= 0;
+}
