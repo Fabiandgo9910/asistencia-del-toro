@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { crearConsigna, obtenerConsignas } from "@/lib/db";
+import { obtenerSesion, puedeGestionarCoches } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 // GET /api/coches/:id/consignas -> historial de consignas de ese coche
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  const sesion = obtenerSesion(req);
+  if (!sesion) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
   const cocheId = Number(params.id);
   if (Number.isNaN(cocheId)) {
     return NextResponse.json({ error: "Id inválido" }, { status: 400 });
@@ -21,6 +26,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 // POST /api/coches/:id/consignas -> añade una nueva consigna (fecha + observación)
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+  const sesion = obtenerSesion(req);
+  if (!sesion) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+  if (!puedeGestionarCoches(sesion.rol)) {
+    return NextResponse.json({ error: "No tienes permiso para hacer esto" }, { status: 403 });
+  }
   const cocheId = Number(params.id);
   if (Number.isNaN(cocheId)) {
     return NextResponse.json({ error: "Id inválido" }, { status: 400 });

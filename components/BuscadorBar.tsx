@@ -6,9 +6,9 @@ export type FiltroPresencia = "presentes" | "no_presentes" | "vencidos" | "con_s
 
 const OPCIONES: { valor: FiltroPresencia; etiqueta: string }[] = [
   { valor: "presentes", etiqueta: "Presentes" },
-  { valor: "no_presentes", etiqueta: "No presentes" },
   { valor: "vencidos", etiqueta: "Vencidos" },
   { valor: "con_salida", etiqueta: "Con salida prevista" },
+  { valor: "no_presentes", etiqueta: "No presentes" },
   { valor: "todos", etiqueta: "Todos" },
 ];
 
@@ -18,16 +18,18 @@ export default function BuscadorBar({
   onExportar,
   filtro,
   onCambiarFiltro,
+  mostrarExportar = true,
 }: {
   valor: string;
   onChange: (v: string) => void;
   onExportar: () => void;
   filtro: FiltroPresencia;
   onCambiarFiltro: (f: FiltroPresencia) => void;
+  mostrarExportar?: boolean;
 }) {
   return (
     <div className="sticky top-0 z-10 bg-toro-bg/95 backdrop-blur border-b border-toro-line px-4 py-3 sm:px-6">
-      <div className="mx-auto max-w-4xl space-y-2">
+      <div className="mx-auto max-w-6xl space-y-2">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search
@@ -42,14 +44,16 @@ export default function BuscadorBar({
               className="w-full rounded-card border border-toro-line bg-toro-surface py-2.5 pl-10 pr-3 text-sm text-toro-ink shadow-card outline-none placeholder:text-toro-slate/70 focus:border-toro-red/40"
             />
           </div>
-          <button
-            onClick={onExportar}
-            className="flex items-center gap-1.5 rounded-card border border-toro-line bg-toro-surface px-3 py-2.5 text-sm text-toro-slate shadow-card transition hover:text-toro-ink"
-            title="Exportar"
-          >
-            <Download size={16} />
-            <span className="hidden sm:inline">Exportar</span>
-          </button>
+          {mostrarExportar && (
+            <button
+              onClick={onExportar}
+              className="flex items-center gap-1.5 rounded-card border border-toro-line bg-toro-surface px-3 py-2.5 text-sm text-toro-slate shadow-card transition hover:text-toro-ink"
+              title="Exportar"
+            >
+              <Download size={16} />
+              <span className="hidden sm:inline">Exportar</span>
+            </button>
+          )}
         </div>
 
         {/* Filtro: presentes / no presentes / con custodia vencida / con salida / todos */}

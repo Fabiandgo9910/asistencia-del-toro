@@ -19,12 +19,14 @@ export default function CocheCard({
   onPedirSalida,
   onEditar,
   onConsignas,
+  puedeGestionar,
 }: {
   coche: Coche;
   onTogglePresencia: (id: number, valor: boolean) => void;
   onPedirSalida: (coche: Coche) => void;
   onEditar: (coche: Coche) => void;
   onConsignas: (coche: Coche) => void;
+  puedeGestionar: boolean;
 }) {
   const [mostrarObs, setMostrarObs] = useState(false);
   const activo = !coche.fecha_salida;
@@ -43,8 +45,12 @@ export default function CocheCard({
   const proximoAVencer = estaProximoAVencer(coche.dias_totales, coche.dias_extra, activo);
 
   return (
-    <div className={`rounded-card border bg-toro-surface p-3 shadow-card sm:p-4 ${coche.bloqueado ? "border-toro-red/40" : "border-toro-line"}`}>
-      <div className="flex items-center gap-3 sm:gap-4">
+    <div
+      className={`flex h-full flex-col rounded-card border bg-toro-surface p-3 shadow-card ${
+        coche.bloqueado ? "border-toro-red/40" : "border-toro-line"
+      }`}
+    >
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3">
         {/* Identificación - clic arriba muestra/oculta observaciones */}
         <button
           onClick={() => setMostrarObs((v) => !v)}
@@ -80,52 +86,64 @@ export default function CocheCard({
 
         {/* Check de presencia diaria - 1 clic. Un coche que ya salió no puede estar "presente". */}
         {activo ? (
-          <button
-            onClick={() => onTogglePresencia(coche.id, !coche.check_presencia)}
-            aria-pressed={coche.check_presencia}
-            title="Marcar presencia en la revisión semanal (domingos)"
-            className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-              coche.check_presencia
-                ? "bg-toro-okBg text-toro-ok"
-                : "bg-toro-warnBg text-toro-red"
-            }`}
-          >
-            {coche.check_presencia ? "Presente" : "No está"}
-          </button>
+          puedeGestionar ? (
+            <button
+              onClick={() => onTogglePresencia(coche.id, !coche.check_presencia)}
+              aria-pressed={coche.check_presencia}
+              title="Marcar presencia en la revisión semanal (domingos)"
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                coche.check_presencia
+                  ? "bg-toro-okBg text-toro-ok"
+                  : "bg-toro-warnBg text-toro-red"
+              }`}
+            >
+              {coche.check_presencia ? "Presente" : "No está"}
+            </button>
+          ) : (
+            <span
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
+                coche.check_presencia ? "bg-toro-okBg text-toro-ok" : "bg-toro-warnBg text-toro-red"
+              }`}
+            >
+              {coche.check_presencia ? "Presente" : "No está"}
+            </span>
+          )
         ) : (
           <span className="shrink-0 rounded-full bg-toro-line px-3 py-1.5 text-xs font-medium text-toro-slate">
             Fuera
           </span>
         )}
 
-        {/* Consignas */}
-        <button
-          onClick={() => onConsignas(coche)}
-          title="Historial de consignas"
-          className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
-        >
-          <ClipboardList size={14} />
-        </button>
+        {/* Consignas, editar y salida: solo admin/oficinista/super_admin */}
+        {puedeGestionar && (
+          <>
+            <button
+              onClick={() => onConsignas(coche)}
+              title="Historial de consignas"
+              className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
+            >
+              <ClipboardList size={14} />
+            </button>
 
-        {/* Editar */}
-        <button
-          onClick={() => onEditar(coche)}
-          title="Editar expediente"
-          className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
-        >
-          <Pencil size={14} />
-        </button>
+            <button
+              onClick={() => onEditar(coche)}
+              title="Editar expediente"
+              className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
+            >
+              <Pencil size={14} />
+            </button>
 
-        {/* Dar salida - pide confirmación */}
-        {activo && (
-          <button
-            onClick={() => onPedirSalida(coche)}
-            title="Dar salida"
-            className="flex shrink-0 items-center gap-1 rounded-card bg-toro-ink px-3 py-1.5 text-xs font-medium text-white transition hover:bg-toro-red"
-          >
-            <LogOut size={14} />
-            <span className="hidden sm:inline">Salida</span>
-          </button>
+            {activo && (
+              <button
+                onClick={() => onPedirSalida(coche)}
+                title="Dar salida"
+                className="flex shrink-0 items-center gap-1 rounded-card bg-toro-ink px-3 py-1.5 text-xs font-medium text-white transition hover:bg-toro-red"
+              >
+                <LogOut size={14} />
+                <span className="hidden sm:inline">Salida</span>
+              </button>
+            )}
+          </>
         )}
       </div>
 

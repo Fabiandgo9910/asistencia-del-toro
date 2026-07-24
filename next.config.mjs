@@ -1,14 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // pdfkit carga sus archivos de fuente (.afm) desde disco en tiempo de
-  // ejecución (no con `import`), así que el rastreador de archivos de
-  // Vercel no los detecta solo y los deja fuera del paquete serverless.
-  // Sin esto, /api/export funciona en local pero falla en producción.
-  experimental: {
-    outputFileTracingIncludes: {
-      "/api/export": ["./node_modules/pdfkit/js/data/**/*"],
-    },
-  },
+  // Nota: este proyecto generaba antes el PDF de exportación con "pdfkit",
+  // que carga sus ficheros de fuente (.afm) desde disco en tiempo de
+  // ejecución. Eso obligaba a un `outputFileTracingIncludes` para que
+  // Vercel empaquetara esos ficheros, y aun así fallaba en producción.
+  // Ahora /api/export usa un generador de PDF propio (lib/pdf-lite.ts) que
+  // no lee nada del disco, así que ya no hace falta ninguna configuración
+  // especial de empaquetado.
 };
 
 export default nextConfig;

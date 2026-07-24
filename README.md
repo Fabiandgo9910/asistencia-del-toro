@@ -140,7 +140,57 @@ concretos: el botón de nueva entrada, el aviso de deuda, y el hover del botón
 
 ---
 
-## Estructura del proyecto
+## Paso 5 — Autenticación y roles
+
+El sistema exige iniciar sesión (usuario/correo + contraseña) para entrar.
+Hay 4 roles:
+
+| Rol | Puede |
+|---|---|
+| `chofer` | Solo registrar entradas de coches (botón +). **No** puede fijar la fecha de salida prevista, editar, dar salida, ver/añadir consignas ni exportar. |
+| `oficinista` | Todo sobre coches: alta, edición, dar salida, consignas, exportar. |
+| `admin` | Igual que oficinista. |
+| `super_admin` | Igual que admin/oficinista, y además es el único que aprueba, rechaza y cambia el rol de cualquier cuenta desde `/admin/usuarios`. |
+
+Cualquiera puede pedir una cuenta desde `/registro`, pero queda **pendiente
+de aprobación** hasta que un `super_admin` la revise. Por eso hace falta
+crear el primer `super_admin` a mano, una sola vez:
+
+```bash
+curl -X POST https://tu-dominio.vercel.app/api/auth/bootstrap \
+  -H "Content-Type: application/json" \
+  -H "x-setup-secret: EL_VALOR_DE_SETUP_SECRET" \
+  -d '{"usuario":"admin","correo":"fdgo.9910@gmai..com","password":"Cidro.2026*"}'
+```
+
+Ese endpoint se autobloquea en cuanto existe un `super_admin` en la base de
+datos (aunque se conozca `SETUP_SECRET`), así que solo funciona la primera
+vez. A partir de ahí, entra en `/login` y aprueba al resto desde el icono
+de "Usuarios" (solo visible para `super_admin`).
+
+No hace falta ninguna librería de autenticación externa: las contraseñas
+se guardan con `scrypt` y las sesiones son cookies firmadas con HMAC —
+ambas cosas usan el módulo `crypto` que ya trae Node, así que no añaden
+dependencias ni puntos de fallo extra.
+
+Ejecuta `sql/migracion_usuarios.sql` en la base de datos (igual que
+`sql/schema.sql`) antes de usar el sistema.
+
+---
+
+## Paso 6 — Sobre la exportación (PDF)
+
+`/api/export` genera el PDF con un motor propio (`lib/pdf-lite.ts`), sin
+ninguna librería externa. Antes usaba `pdfkit`, que lee sus ficheros de
+fuente `.afm` desde disco en tiempo de ejecución — eso es justo lo que
+fallaba en producción (y por lo que `/api/export` devolvía un JSON de
+error en vez del PDF): el "file tracing" de Vercel no siempre empaqueta
+esos ficheros, y además el paquete `pdfkit` no estaba correctamente
+instalado en este proyecto (no figuraba en `package-lock.json`). El nuevo
+motor no lee nada del disco ni depende de ningún paquete, así que esa
+clase de fallo ya no puede volver a ocurrir.
+
+---
 
 ```
 app/

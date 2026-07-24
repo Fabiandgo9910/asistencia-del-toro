@@ -9,10 +9,12 @@ export default function NuevaEntradaModal({
   abierto,
   onCerrar,
   onCreado,
+  mostrarFechaSalida = true,
 }: {
   abierto: boolean;
   onCerrar: () => void;
   onCreado: () => void;
+  mostrarFechaSalida?: boolean;
 }) {
   const [matricula, setMatricula] = useState("");
   const [modelo, setModelo] = useState("");
@@ -126,15 +128,17 @@ export default function NuevaEntradaModal({
               className="rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
             />
           </label>
-          <label className="flex items-center justify-between text-sm text-toro-slate">
-            Fecha de salida prevista (opcional)
-            <input
-              type="date"
-              value={fechaDestino}
-              onChange={(e) => setFechaDestino(e.target.value)}
-              className="rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
-            />
-          </label>
+          {mostrarFechaSalida && (
+            <label className="flex items-center justify-between text-sm text-toro-slate">
+              Fecha de salida prevista (opcional)
+              <input
+                type="date"
+                value={fechaDestino}
+                onChange={(e) => setFechaDestino(e.target.value)}
+                className="rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
+              />
+            </label>
+          )}
           <div className="flex flex-wrap gap-2 pt-1">
             <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
               <input

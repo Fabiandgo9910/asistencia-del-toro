@@ -6,6 +6,7 @@ import {
   eliminarCoche,
   obtenerCoche,
 } from "@/lib/db";
+import { obtenerSesion, puedeGestionarCoches } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,18 @@ export const dynamic = "force-dynamic";
 //   { accion: "dar_salida", traslado: boolean, empresa_traslado?: string }
 //   { accion: "presencia", valor: true|false }
 //   { ...camposLibres }  -> edición manual desde el expediente
+//
+// Reservado a admin/oficinista/super_admin: los choferes solo pueden dar de
+// alta coches (POST /api/coches), no editarlos ni darles salida.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+  const sesion = obtenerSesion(req);
+  if (!sesion) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+  if (!puedeGestionarCoches(sesion.rol)) {
+    return NextResponse.json({ error: "No tienes permiso para hacer esto" }, { status: 403 });
+  }
+
   const id = Number(params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "Id inválido" }, { status: 400 });
@@ -49,6 +61,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 // DELETE /api/coches/:id -> elimina el registro definitivamente
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  const sesion = obtenerSesion(req);
+  if (!sesion) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+  if (!puedeGestionarCoches(sesion.rol)) {
+    return NextResponse.json({ error: "No tienes permiso para hacer esto" }, { status: 403 });
+  }
+
   const id = Number(params.id);
   if (Number.isNaN(id)) {
     return NextResponse.json({ error: "Id inválido" }, { status: 400 });

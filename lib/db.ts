@@ -1,5 +1,6 @@
 import { neon, type NeonQueryFunction } from "@neondatabase/serverless";
 import type { Coche, Consigna } from "@/types/coche";
+import type { Rol } from "@/lib/auth";
 
 // La integración de Neon en Vercel inyecta varias variables equivalentes
 // (POSTGRES_URL, DATABASE_URL, ...). Aceptamos cualquiera de las dos para
@@ -254,4 +255,68 @@ export async function crearConsigna(
 
 export async function eliminarConsigna(id: number) {
   await sql(`DELETE FROM consignas WHERE id = $1`, [id]);
+}
+
+// --- Usuarios / autenticación ---
+
+export type UsuarioDB = {
+  id: number;
+  usuario: string;
+  correo: string;
+  password_hash: string;
+  rol: Rol;
+  aprobado: boolean;
+  creado_en: string;
+};
+
+export async function existeSuperAdmin(): Promise<boolean> {
+  const rows = await sql(`SELECT 1 FROM usuarios WHERE rol = 'super_admin' LIMIT 1`);
+  return rows.length > 0;
+}
+
+export async function crearUsuario(data: {
+  usuario: string;
+  correo: string;
+  passwordHash: string;
+  rol: Rol;
+  aprobado: boolean;
+}): Promise<number> {
+  const rows = await sql(
+    `INSERT INTO usuarios (usuario, correo, password_hash, rol, aprobado)
+     VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+    [data.usuario, data.correo, data.passwordHash, data.rol, data.aprobado]
+  );
+  return rows[0].id as number;
+}
+
+export async function obtenerUsuarioPorLogin(identificador: string): Promise<UsuarioDB | null> {
+  const rows = await sql(
+    `SELECT * FROM usuarios WHERE LOWER(usuario) = LOWER($1) OR LOWER(correo) = LOWER($1) LIMIT 1`,
+    [identificador]
+  );
+  return (rows[0] as UsuarioDB) ?? null;
+}
+
+export async function obtenerUsuarioPorId(id: number): Promise<UsuarioDB | null> {
+  const rows = await sql(`SELECT * FROM usuarios WHERE id = $1`, [id]);
+  return (rows[0] as UsuarioDB) ?? null;
+}
+
+export async function listarUsuarios(): Promise<Omit<UsuarioDB, "password_hash">[]> {
+  const rows = await sql(
+    `SELECT id, usuario, correo, rol, aprobado, creado_en FROM usuarios ORDER BY aprobado ASC, creado_en DESC`
+  );
+  return rows as Omit<UsuarioDB, "password_hash">[];
+}
+
+export async function aprobarUsuario(id: number, rol: Rol) {
+  await sql(`UPDATE usuarios SET aprobado = true, rol = $2 WHERE id = $1`, [id, rol]);
+}
+
+export async function cambiarRolUsuario(id: number, rol: Rol) {
+  await sql(`UPDATE usuarios SET rol = $2 WHERE id = $1`, [id, rol]);
+}
+
+export async function eliminarUsuario(id: number) {
+  await sql(`DELETE FROM usuarios WHERE id = $1`, [id]);
 }
