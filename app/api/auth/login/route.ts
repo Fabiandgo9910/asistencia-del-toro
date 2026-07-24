@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { obtenerUsuarioPorLogin } from "@/lib/db";
-import { crearTokenSesion, verificarPassword, NOMBRE_COOKIE } from "@/lib/auth";
+import { crearTokenSesion, NOMBRE_COOKIE } from "@/lib/auth";
+import { verificarPassword } from "@/lib/password";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const token = crearTokenSesion({ id: usuario.id, usuario: usuario.usuario, rol: usuario.rol });
+    const token = await crearTokenSesion({ id: usuario.id, usuario: usuario.usuario, rol: usuario.rol });
     const res = NextResponse.json({
       usuario: { id: usuario.id, usuario: usuario.usuario, rol: usuario.rol },
     });

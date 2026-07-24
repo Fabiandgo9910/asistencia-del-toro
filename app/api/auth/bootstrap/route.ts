@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { crearUsuario, existeSuperAdmin, obtenerUsuarioPorLogin } from "@/lib/db";
-import { hashPassword } from "@/lib/auth";
+import { hashPassword } from "@/lib/password";
 
 export const dynamic = "force-dynamic";
 

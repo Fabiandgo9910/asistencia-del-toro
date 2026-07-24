@@ -160,7 +160,7 @@ crear el primer `super_admin` a mano, una sola vez:
 curl -X POST https://tu-dominio.vercel.app/api/auth/bootstrap \
   -H "Content-Type: application/json" \
   -H "x-setup-secret: EL_VALOR_DE_SETUP_SECRET" \
-  -d '{"usuario":"admin","correo":"fdgo.9910@gmai..com","password":"Cidro.2026*"}'
+  -d '{"usuario":"admin","correo":"tu@correo.com","password":"unacontraseñasegura"}'
 ```
 
 Ese endpoint se autobloquea en cuanto existe un `super_admin` en la base de

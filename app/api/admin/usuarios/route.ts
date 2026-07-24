@@ -5,7 +5,7 @@ import { obtenerSesion, puedeGestionarUsuarios } from "@/lib/auth";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion || !puedeGestionarUsuarios(sesion.rol)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }

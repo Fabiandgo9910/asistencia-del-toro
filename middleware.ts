@@ -4,7 +4,7 @@ import { leerTokenSesion, NOMBRE_COOKIE, puedeGestionarUsuarios } from "@/lib/au
 // Rutas accesibles sin haber iniciado sesión.
 const RUTAS_PUBLICAS = ["/login", "/registro", "/pendiente"];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Las rutas de API se protegen ellas mismas (comprueban la sesión con
@@ -19,7 +19,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const sesion = leerTokenSesion(req.cookies.get(NOMBRE_COOKIE)?.value);
+  const sesion = await leerTokenSesion(req.cookies.get(NOMBRE_COOKIE)?.value);
 
   if (RUTAS_PUBLICAS.includes(pathname)) {
     // Si ya hay sesión iniciada, no tiene sentido volver a ver el login.

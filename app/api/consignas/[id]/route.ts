@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 // DELETE /api/consignas/:id -> elimina una consigna concreta (por si se apuntó por error)
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }

@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 // GET /api/coches?q=1234ABC  -> búsqueda en tiempo real por matrícula o expediente
 // Cualquier usuario autenticado (incluidos los choferes) puede ver el listado.
 export async function GET(req: NextRequest) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 // Los choferes SÍ pueden dar de alta coches, pero nunca pueden fijar la
 // fecha de salida prevista (fecha_destino): se ignora si la mandan.
 export async function POST(req: NextRequest) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }

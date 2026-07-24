@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 // Reservado a admin/oficinista/super_admin: los choferes solo pueden dar de
 // alta coches (POST /api/coches), no editarlos ni darles salida.
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
@@ -61,7 +61,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 // DELETE /api/coches/:id -> elimina el registro definitivamente
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }

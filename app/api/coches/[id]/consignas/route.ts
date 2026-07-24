@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 // GET /api/coches/:id/consignas -> historial de consignas de ese coche
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
 // POST /api/coches/:id/consignas -> añade una nueva consigna (fecha + observación)
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
   }

@@ -8,7 +8,7 @@ const ROLES_VALIDOS: Rol[] = ["super_admin", "admin", "oficinista", "chofer"];
 
 // PATCH /api/admin/usuarios/:id  { accion: "aprobar", rol } | { accion: "rol", rol }
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion || !puedeGestionarUsuarios(sesion.rol)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
@@ -48,7 +48,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 
 // DELETE /api/admin/usuarios/:id -> rechaza una solicitud o da de baja a un usuario
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const sesion = obtenerSesion(req);
+  const sesion = await obtenerSesion(req);
   if (!sesion || !puedeGestionarUsuarios(sesion.rol)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
