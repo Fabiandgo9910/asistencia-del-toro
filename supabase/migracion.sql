@@ -106,9 +106,7 @@ create table if not exists public.coches (
   modelo             varchar(120),
   numero_expediente  varchar(80),
   fecha_salida       timestamp,
-  observaciones      text,
-  ultima_revision    timestamp,
-  check_presencia    boolean not null default true
+  observaciones      text
 );
 
 create index if not exists idx_coches_matricula on public.coches (matricula);
@@ -199,7 +197,7 @@ create or replace view public.coches_calculado as
 select
   c.id, c.plaza, c.fecha_entrada, c.tiene_llave, c.esta_calcinado, c.bloqueado, c.traslado,
   c.empresa_traslado, c.fecha_traslado, c.fecha_destino, c.matricula, c.modelo,
-  c.numero_expediente, c.fecha_salida, c.observaciones, c.ultima_revision, c.check_presencia,
+  c.numero_expediente, c.fecha_salida, c.observaciones,
   (c.fecha_salida is null and c.fecha_destino is not null) as tiene_destino,
   (select max(fecha) from public.consignas where consignas.coche_id = c.id) as ultima_consigna,
   greatest(

@@ -2,13 +2,12 @@
 
 import { Search, Download } from "lucide-react";
 
-export type FiltroPresencia = "presentes" | "no_presentes" | "vencidos" | "con_salida" | "todos";
+export type FiltroLista = "en_base" | "vencidos" | "con_salida" | "todos";
 
-const OPCIONES: { valor: FiltroPresencia; etiqueta: string }[] = [
-  { valor: "presentes", etiqueta: "Presentes" },
+const OPCIONES: { valor: FiltroLista; etiqueta: string }[] = [
+  { valor: "en_base", etiqueta: "En base" },
   { valor: "vencidos", etiqueta: "Vencidos" },
   { valor: "con_salida", etiqueta: "Con salida prevista" },
-  { valor: "no_presentes", etiqueta: "No presentes" },
   { valor: "todos", etiqueta: "Todos" },
 ];
 
@@ -23,8 +22,8 @@ export default function BuscadorBar({
   valor: string;
   onChange: (v: string) => void;
   onExportar: () => void;
-  filtro: FiltroPresencia;
-  onCambiarFiltro: (f: FiltroPresencia) => void;
+  filtro: FiltroLista;
+  onCambiarFiltro: (f: FiltroLista) => void;
   mostrarExportar?: boolean;
 }) {
   return (
@@ -56,7 +55,7 @@ export default function BuscadorBar({
           )}
         </div>
 
-        {/* Filtro: presentes / no presentes / con custodia vencida / con salida / todos */}
+        {/* Filtro: en base / con custodia vencida / con salida prevista / todos */}
         <div className="flex w-full gap-1 overflow-x-auto rounded-card border border-toro-line bg-toro-surface p-1 shadow-card">
           {OPCIONES.map((o) => (
             <button

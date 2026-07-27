@@ -14,8 +14,6 @@ export type Coche = {
   numero_expediente: string | null;
   fecha_salida: string | null; // timestamp ISO, null = activo
   observaciones: string | null;
-  ultima_revision: string | null;
-  check_presencia: boolean;
   // Calculado en servidor (SQL):
   tiene_destino: boolean; // true si aún no salió pero ya tiene fecha_destino
   ultima_consigna: string | null; // fecha de la consigna más reciente

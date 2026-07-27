@@ -62,8 +62,6 @@ export async function crearCoche(data: {
       bloqueado: data.bloqueado,
       fecha_destino: data.fecha_destino,
       observaciones: data.observaciones,
-      check_presencia: true,
-      ultima_revision: new Date().toISOString(),
     })
     .select("id")
     .single();
@@ -72,9 +70,8 @@ export async function crearCoche(data: {
 }
 
 // Dar salida ahora admite indicar si fue por traslado y, si aplica, la
-// empresa que se lo llevó. Un coche que ya salió deja de contar como
-// "presente". El filtro .is("fecha_salida", null) evita dar salida dos
-// veces al mismo coche.
+// empresa que se lo llevó. El filtro .is("fecha_salida", null) evita dar
+// salida dos veces al mismo coche.
 export async function darSalida(
   id: number,
   opciones: { esTraslado: boolean; empresaTraslado?: string | null }
@@ -84,7 +81,6 @@ export async function darSalida(
     .from("coches")
     .update({
       fecha_salida: ahora,
-      check_presencia: false,
       traslado: opciones.esTraslado ? "Sí" : null,
       empresa_traslado: opciones.esTraslado ? opciones.empresaTraslado ?? null : null,
       fecha_traslado: opciones.esTraslado ? ahora : undefined,
@@ -92,14 +88,6 @@ export async function darSalida(
     .eq("id", id)
     .is("fecha_salida", null);
   if (error) lanzar("Error al dar salida", error);
-}
-
-export async function actualizarPresencia(id: number, presente: boolean) {
-  const { error } = await db()
-    .from("coches")
-    .update({ check_presencia: presente, ultima_revision: new Date().toISOString() })
-    .eq("id", id);
-  if (error) lanzar("Error al actualizar la presencia", error);
 }
 
 export async function actualizarCoche(id: number, campos: Record<string, unknown>) {
@@ -117,8 +105,8 @@ export async function eliminarCoche(id: number) {
 // El operario elige uno de estos tres filtros a la hora de exportar:
 //   - vencidos:   coches con custodia ya vencida O a punto de vencer.
 //   - con_salida: coches con fecha PREVISTA de salida pero aún no han salido.
-//   - presentes:  coches que todavía siguen en la base (no han salido).
-export type FiltroExportacion = "vencidos" | "con_salida" | "presentes";
+//   - en_base:    coches que todavía siguen en la base (no han salido).
+export type FiltroExportacion = "vencidos" | "con_salida" | "en_base";
 
 export async function exportarPorFiltro(
   filtro: FiltroExportacion,
@@ -132,7 +120,7 @@ export async function exportarPorFiltro(
   } else if (filtro === "con_salida") {
     consulta = consulta.eq("tiene_destino", true);
   } else {
-    consulta = consulta.is("fecha_salida", null); // presentes
+    consulta = consulta.is("fecha_salida", null); // en_base
   }
 
   if (q !== "") {

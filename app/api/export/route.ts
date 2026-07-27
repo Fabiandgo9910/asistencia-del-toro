@@ -22,7 +22,7 @@ const COLUMNAS: { titulo: string; ancho: number; align?: "left" | "center" }[] =
   { titulo: "FECHA", ancho: 65 },
 ];
 
-// GET /api/export?filtro=vencidos|con_salida|presentes&q=opcional
+// GET /api/export?filtro=vencidos|con_salida|en_base&q=opcional
 // Genera un PDF con el mismo formato exacto que la hoja base en papel.
 // Se sirve con Content-Disposition "inline" para que el navegador lo abra
 // directamente en su visor de PDF.
@@ -45,12 +45,12 @@ export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get("q") ?? "";
   const filtroParam = req.nextUrl.searchParams.get("filtro");
   const filtro: FiltroExportacion =
-    filtroParam === "vencidos" || filtroParam === "con_salida" ? filtroParam : "presentes";
+    filtroParam === "vencidos" || filtroParam === "con_salida" ? filtroParam : "en_base";
 
   const tituloFiltro = {
     vencidos: "COCHES CON CUSTODIA VENCIDA",
     con_salida: "COCHES CON SALIDA PREVISTA",
-    presentes: "COCHES EN BASE (PRESENTES)",
+    en_base: "COCHES EN BASE",
   }[filtro];
 
   try {

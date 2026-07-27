@@ -2,7 +2,7 @@
 
 import { X, FileWarning, Truck, ParkingCircle } from "lucide-react";
 
-export type FiltroExportacion = "vencidos" | "con_salida" | "presentes";
+export type FiltroExportacion = "vencidos" | "con_salida" | "en_base";
 
 const OPCIONES: {
   valor: FiltroExportacion;
@@ -23,9 +23,9 @@ const OPCIONES: {
     icono: Truck,
   },
   {
-    valor: "presentes",
-    etiqueta: "Todos los presentes",
-    descripcion: "Todos los coches que siguen en la base.",
+    valor: "en_base",
+    etiqueta: "Los que están en la base",
+    descripcion: "Todos los coches que todavía no han salido.",
     icono: ParkingCircle,
   },
 ];

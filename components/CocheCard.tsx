@@ -37,14 +37,12 @@ function Dato({
 
 export default function CocheCard({
   coche,
-  onTogglePresencia,
   onPedirSalida,
   onEditar,
   onConsignas,
   puedeGestionar,
 }: {
   coche: Coche;
-  onTogglePresencia: (id: number, valor: boolean) => void;
   onPedirSalida: (coche: Coche) => void;
   onEditar: (coche: Coche) => void;
   onConsignas: (coche: Coche) => void;
@@ -54,17 +52,14 @@ export default function CocheCard({
   const activo = !coche.fecha_salida;
   const tieneDeuda = coche.penalizacion > 0;
 
-  // La revisión de presencia se hace una vez por semana (los domingos).
-  // Si han pasado más de 7 días desde la última, se resalta como pendiente.
-  const revisionPendiente =
-    activo &&
-    (!coche.ultima_revision ||
-      Date.now() - new Date(coche.ultima_revision).getTime() > 7 * 24 * 60 * 60 * 1000);
-
   // A punto de vencerse la custodia: aún no vencida (sin días extra) pero a
   // 2 días o menos del día 12 -> aviso amarillo para adelantarse con la consigna.
   const diasParaVencer = calcDiasParaVencer(coche.dias_totales, coche.dias_extra);
   const proximoAVencer = estaProximoAVencer(coche.dias_totales, coche.dias_extra, activo);
+
+  // La fila de acciones solo se dibuja si hay algo que mostrar en ella: el
+  // aviso de "Fuera" (coches que ya salieron) o los botones de gestión.
+  const hayFilaDeAcciones = !activo || puedeGestionar;
 
   return (
     <div
@@ -109,65 +104,47 @@ export default function CocheCard({
         </div>
       )}
 
-      {/* 3. Fila de acciones: presencia a la izquierda, gestión a la derecha.
-          Separada de la identificación para que nunca se amontonen. */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-toro-line pt-2.5">
-        {activo ? (
-          puedeGestionar ? (
-            <button
-              onClick={() => onTogglePresencia(coche.id, !coche.check_presencia)}
-              aria-pressed={coche.check_presencia}
-              title="Marcar presencia en la revisión semanal (domingos)"
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition ${
-                coche.check_presencia ? "bg-toro-okBg text-toro-ok" : "bg-toro-warnBg text-toro-red"
-              }`}
-            >
-              {coche.check_presencia ? "Presente" : "No está"}
-            </button>
-          ) : (
-            <span
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
-                coche.check_presencia ? "bg-toro-okBg text-toro-ok" : "bg-toro-warnBg text-toro-red"
-              }`}
-            >
-              {coche.check_presencia ? "Presente" : "No está"}
+      {/* 3. Fila de acciones: aviso de "Fuera" (si ya salió) a la izquierda,
+          gestión a la derecha. Separada de la identificación para que
+          nunca se amontonen. Si no hay nada que mostrar, no se dibuja. */}
+      {hayFilaDeAcciones && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-toro-line pt-2.5">
+          {!activo && (
+            <span className="shrink-0 rounded-full bg-toro-line px-3 py-1.5 text-xs font-medium text-toro-slate">
+              Fuera
             </span>
-          )
-        ) : (
-          <span className="shrink-0 rounded-full bg-toro-line px-3 py-1.5 text-xs font-medium text-toro-slate">
-            Fuera
-          </span>
-        )}
+          )}
 
-        {puedeGestionar && (
-          <div className="flex shrink-0 items-center gap-1.5">
-            <button
-              onClick={() => onConsignas(coche)}
-              title="Historial de consignas"
-              className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
-            >
-              <ClipboardList size={14} />
-            </button>
-            <button
-              onClick={() => onEditar(coche)}
-              title="Editar expediente"
-              className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
-            >
-              <Pencil size={14} />
-            </button>
-            {activo && (
+          {puedeGestionar && (
+            <div className="ml-auto flex shrink-0 items-center gap-1.5">
               <button
-                onClick={() => onPedirSalida(coche)}
-                title="Dar salida"
-                className="flex shrink-0 items-center gap-1 rounded-card bg-toro-ink px-3 py-1.5 text-xs font-medium text-white transition hover:bg-toro-red"
+                onClick={() => onConsignas(coche)}
+                title="Historial de consignas"
+                className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
               >
-                <LogOut size={14} />
-                <span className="hidden sm:inline">Salida</span>
+                <ClipboardList size={14} />
               </button>
-            )}
-          </div>
-        )}
-      </div>
+              <button
+                onClick={() => onEditar(coche)}
+                title="Editar expediente"
+                className="shrink-0 rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-ink"
+              >
+                <Pencil size={14} />
+              </button>
+              {activo && (
+                <button
+                  onClick={() => onPedirSalida(coche)}
+                  title="Dar salida"
+                  className="flex shrink-0 items-center gap-1 rounded-card bg-toro-ink px-3 py-1.5 text-xs font-medium text-white transition hover:bg-toro-red"
+                >
+                  <LogOut size={14} />
+                  <span className="hidden sm:inline">Salida</span>
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 4. Estado físico del coche: llave / calcinado / bloqueado */}
       {(coche.tiene_llave || coche.esta_calcinado || coche.bloqueado) && (
@@ -196,16 +173,6 @@ export default function CocheCard({
         <Dato etiqueta="Entrada" valor={fmtFecha(coche.fecha_entrada)} />
         <Dato etiqueta="Propios hasta" valor={fmtFecha(coche.fecha_fin_propios)} />
         <Dato etiqueta="Mapfre hasta" valor={fmtFecha(coche.fecha_fin_mapfre)} />
-        <Dato
-          etiqueta="Revisado"
-          valor={
-            <>
-              {fmtFecha(coche.ultima_revision)}
-              {revisionPendiente && " · pendiente"}
-            </>
-          }
-          destacado={revisionPendiente}
-        />
         {coche.tiene_destino && (
           <Dato
             etiqueta="Destino previsto"

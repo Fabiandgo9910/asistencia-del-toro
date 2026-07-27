@@ -184,5 +184,6 @@ lib/
     server.ts, client.ts, admin.ts, env.ts
 middleware.ts                       Protege páginas y aplica el gate de aprobación
 supabase/migracion.sql              Todo el esquema: tablas, RLS, triggers, pg_cron
+supabase/migracion_quitar_presencia.sql  Solo si venías de una versión con "presente"/revisión
 types/coche.ts
 ```

@@ -4,14 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, LogOut, ShieldCheck, UserCircle2 } from "lucide-react";
-import BuscadorBar, { type FiltroPresencia } from "./BuscadorBar";
+import BuscadorBar, { type FiltroLista } from "./BuscadorBar";
 import CocheCard from "./CocheCard";
 import NuevaEntradaModal from "./NuevaEntradaModal";
 import SalidaModal from "./SalidaModal";
 import EditarCocheModal from "./EditarCocheModal";
 import ConsignasModal from "./ConsignasModal";
 import ExportarModal, { type FiltroExportacion } from "./ExportarModal";
-import ConfirmModal from "./ConfirmModal";
 import { estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
 import type { Sesion } from "@/lib/sesion";
@@ -34,14 +33,9 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
   const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
   const [cocheParaConsignas, setCocheParaConsignas] = useState<Coche | null>(null);
   const [exportarAbierto, setExportarAbierto] = useState(false);
-  const [confirmPresencia, setConfirmPresencia] = useState<{
-    id: number;
-    matricula: string;
-    valor: boolean;
-  } | null>(null);
-  // Por defecto solo se muestran los coches presentes, que es el caso de uso
-  // más habitual (parking activo); el operario puede cambiarlo cuando quiera.
-  const [filtro, setFiltro] = useState<FiltroPresencia>("presentes");
+  // Por defecto solo se muestran los coches que siguen en la base, que es
+  // el caso de uso más habitual; el operario puede cambiarlo cuando quiera.
+  const [filtro, setFiltro] = useState<FiltroLista>("en_base");
 
   const puedeGestionar = sesion.rol !== "chofer";
 
@@ -59,33 +53,6 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
     return () => clearTimeout(t);
   }, [query, cargar]);
 
-  const togglePresencia = async (id: number, valor: boolean) => {
-    setCoches((prev) =>
-      prev.map((c) =>
-        c.id === id ? { ...c, check_presencia: valor, ultima_revision: new Date().toISOString() } : c
-      )
-    );
-    await fetch(`/api/coches/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "presencia", valor }),
-    });
-  };
-
-  // Antes de aplicar el cambio de presencia se pide confirmación, para
-  // evitar toques accidentales sobre todo en móvil.
-  const pedirTogglePresencia = (id: number, valor: boolean) => {
-    const coche = coches.find((c) => c.id === id);
-    setConfirmPresencia({ id, matricula: coche?.matricula ?? "", valor });
-  };
-
-  const confirmarTogglePresencia = () => {
-    if (!confirmPresencia) return;
-    const { id, valor } = confirmPresencia;
-    setConfirmPresencia(null);
-    togglePresencia(id, valor);
-  };
-
   // Exportar ahora es de 2 pasos: se elige el filtro en ExportarModal y
   // desde ahí se abre el PDF resultante en una pestaña nueva.
   const elegirExportacion = (filtroExport: FiltroExportacion) => {
@@ -102,10 +69,9 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
   };
 
   const visibles = coches.filter((c) => {
-    if (filtro === "presentes") return c.check_presencia;
-    if (filtro === "no_presentes") return !c.check_presencia;
+    const activo = !c.fecha_salida;
+    if (filtro === "en_base") return activo;
     if (filtro === "vencidos") {
-      const activo = !c.fecha_salida;
       return c.penalizacion > 0 || estaProximoAVencer(c.dias_totales, c.dias_extra, activo);
     }
     if (filtro === "con_salida") return c.tiene_destino;
@@ -113,8 +79,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
   });
 
   const mensajeVacio = {
-    presentes: "Ningún coche presente coincide con la búsqueda.",
-    no_presentes: "Ningún coche marcado como ausente coincide con la búsqueda.",
+    en_base: "Ningún coche en base coincide con la búsqueda.",
     vencidos: "Ningún coche está vencido ni a punto de vencer ahora mismo.",
     con_salida: "Ningún coche con fecha de salida prevista coincide con la búsqueda.",
     todos: `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`,
@@ -182,7 +147,6 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
               <CocheCard
                 key={coche.id}
                 coche={coche}
-                onTogglePresencia={pedirTogglePresencia}
                 onPedirSalida={setCocheParaSalida}
                 onEditar={setCocheParaEditar}
                 onConsignas={setCocheParaConsignas}
@@ -238,15 +202,6 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
             />
           </>
         )}
-
-        <ConfirmModal
-          abierto={!!confirmPresencia}
-          titulo={confirmPresencia?.valor ? "¿Marcar como presente?" : "¿Marcar como no presente?"}
-          mensaje={confirmPresencia?.matricula ? `Matrícula ${confirmPresencia.matricula}` : undefined}
-          textoConfirmar="Confirmar"
-          onConfirmar={confirmarTogglePresencia}
-          onCancelar={() => setConfirmPresencia(null)}
-        />
       </main>
 
       {/* Barra fija abajo, discreta, que no tapa ni el contenido ni el
