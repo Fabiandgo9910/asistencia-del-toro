@@ -57,7 +57,7 @@ export default function CocheCard({
   // A punto de vencerse la custodia: aún no vencida (sin días extra) pero a
   // 2 días o menos del día 12 -> aviso amarillo para adelantarse con la consigna.
   const diasParaVencer = calcDiasParaVencer(coche.dias_totales, coche.dias_extra);
-  const proximoAVencer = estaProximoAVencer(coche.dias_totales, coche.dias_extra, activo);
+  const proximoAVencer = estaProximoAVencer(coche.dias_totales, coche.dias_extra, activo, coche.tiene_destino);
 
   const hayEstadoFisico = coche.tiene_llave || coche.esta_calcinado || coche.bloqueado;
   const hayConsignaOAviso = coche.ultima_consigna || proximoAVencer;

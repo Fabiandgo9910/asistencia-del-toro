@@ -86,7 +86,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
     const activo = !c.fecha_salida;
     if (filtro === "en_base") return activo;
     if (filtro === "vencidos") {
-      return c.penalizacion > 0 || estaProximoAVencer(c.dias_totales, c.dias_extra, activo);
+      return c.penalizacion > 0 || estaProximoAVencer(c.dias_totales, c.dias_extra, activo, c.tiene_destino);
     }
     if (filtro === "con_salida") return c.tiene_destino;
     return true;

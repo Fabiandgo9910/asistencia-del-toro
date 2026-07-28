@@ -221,7 +221,9 @@ select
   (c.fecha_entrada + interval '3 days')::date as fecha_fin_propios,
   (c.fecha_entrada + interval '12 days')::date as fecha_fin_mapfre,
   (
-    greatest(
+    c.fecha_salida is null
+    and c.fecha_destino is null
+    and greatest(
       greatest(
         date_part('day', coalesce(c.fecha_salida, c.fecha_destino::timestamp, now()) - c.fecha_entrada::timestamp)::int,
         0
@@ -233,7 +235,7 @@ select
         date_part('day', coalesce(c.fecha_salida, c.fecha_destino::timestamp, now()) - c.fecha_entrada::timestamp)::int,
         0
       )
-    ) between 0 and 2
+    ) between 0 and 3
   ) as proximo_a_vencer
 from public.coches c;
 

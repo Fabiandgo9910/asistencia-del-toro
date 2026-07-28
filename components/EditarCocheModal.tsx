@@ -161,14 +161,26 @@ export default function EditarCocheModal({
             </label>
             {!coche.fecha_salida && (
               <>
-                <label className="flex items-center justify-between text-sm text-toro-slate">
+                <label className="flex items-center justify-between gap-2 text-sm text-toro-slate">
                   Fecha prevista de salida (destino)
-                  <input
-                    type="date"
-                    value={fechaDestino}
-                    onChange={(e) => setFechaDestino(e.target.value)}
-                    className="rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
-                  />
+                  <span className="flex items-center gap-1.5">
+                    <input
+                      type="date"
+                      value={fechaDestino}
+                      onChange={(e) => setFechaDestino(e.target.value)}
+                      className="rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
+                    />
+                    {fechaDestino && (
+                      <button
+                        type="button"
+                        onClick={() => setFechaDestino("")}
+                        title="Quitar fecha de salida prevista"
+                        className="rounded-card border border-toro-line p-2 text-toro-slate transition hover:text-toro-red"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </span>
                 </label>
                 {fechaDestino && (
                   <p className="text-[11px] text-toro-slate">
