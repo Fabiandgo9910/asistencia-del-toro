@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   actualizarCoche,
   darSalida,
+  revertirSalida,
   eliminarCoche,
   obtenerCoche,
 } from "@/lib/db";
@@ -11,8 +12,9 @@ import { puedeGestionarCoches } from "@/lib/roles";
 export const dynamic = "force-dynamic";
 
 // PATCH /api/coches/:id
-// Body admite dos modos:
+// Body admite tres modos:
 //   { accion: "dar_salida", traslado: boolean, empresa_traslado?: string }
+//   { accion: "revertir_salida" }  -> deshace una salida dada por error
 //   { ...camposLibres }  -> edición manual desde el expediente
 //
 // Reservado a admin/oficinista/super_admin: los choferes solo pueden dar de
@@ -41,6 +43,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         esTraslado: Boolean(body.traslado),
         empresaTraslado: body.empresa_traslado ?? null,
       });
+    } else if (body.accion === "revertir_salida") {
+      await revertirSalida(id);
     } else {
       const { accion, valor, ...campos } = body;
       if (typeof campos.matricula === "string") {

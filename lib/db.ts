@@ -90,6 +90,23 @@ export async function darSalida(
   if (error) lanzar("Error al dar salida", error);
 }
 
+// Deshace una salida dada por error: el coche vuelve a quedar activo en
+// la base, como si nunca hubiera salido. El filtro .not(...) evita
+// "revertir" un coche que en realidad sigue activo.
+export async function revertirSalida(id: number) {
+  const { error } = await db()
+    .from("coches")
+    .update({
+      fecha_salida: null,
+      traslado: null,
+      empresa_traslado: null,
+      fecha_traslado: null,
+    })
+    .eq("id", id)
+    .not("fecha_salida", "is", null);
+  if (error) lanzar("Error al deshacer la salida", error);
+}
+
 export async function actualizarCoche(id: number, campos: Record<string, unknown>) {
   if (Object.keys(campos).length === 0) return;
   const { error } = await db().from("coches").update(campos).eq("id", id);

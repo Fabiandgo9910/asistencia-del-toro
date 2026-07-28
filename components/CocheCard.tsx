@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Key, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle, FileText } from "lucide-react";
+import { Key, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle, FileText, RotateCcw } from "lucide-react";
 import MatriculaBadge from "./MatriculaBadge";
 import { diasParaVencer as calcDiasParaVencer, estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
@@ -38,12 +38,14 @@ function Dato({
 export default function CocheCard({
   coche,
   onPedirSalida,
+  onRevertirSalida,
   onEditar,
   onConsignas,
   puedeGestionar,
 }: {
   coche: Coche;
   onPedirSalida: (coche: Coche) => void;
+  onRevertirSalida: (coche: Coche) => void;
   onEditar: (coche: Coche) => void;
   onConsignas: (coche: Coche) => void;
   puedeGestionar: boolean;
@@ -110,8 +112,19 @@ export default function CocheCard({
       {hayFilaDeAcciones && (
         <div className="flex flex-wrap items-center gap-2 border-t border-toro-line pt-2.5">
           {!activo && (
-            <span className="shrink-0 rounded-full bg-toro-line px-3 py-1.5 text-xs font-medium text-toro-slate">
-              Fuera
+            <span className="flex shrink-0 items-center gap-2">
+              <span className="rounded-full bg-toro-line px-3 py-1.5 text-xs font-medium text-toro-slate">
+                Fuera
+              </span>
+              {puedeGestionar && (
+                <button
+                  onClick={() => onRevertirSalida(coche)}
+                  title="Deshacer salida (volver a poner en base)"
+                  className="flex items-center gap-1 rounded-card border border-toro-line px-2 py-1.5 text-[11px] text-toro-slate transition hover:text-toro-ink"
+                >
+                  <RotateCcw size={13} /> Deshacer salida
+                </button>
+              )}
             </span>
           )}
 

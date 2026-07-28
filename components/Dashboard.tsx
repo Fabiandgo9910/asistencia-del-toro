@@ -11,6 +11,7 @@ import SalidaModal from "./SalidaModal";
 import EditarCocheModal from "./EditarCocheModal";
 import ConsignasModal from "./ConsignasModal";
 import ExportarModal, { type FiltroExportacion } from "./ExportarModal";
+import ConfirmModal from "./ConfirmModal";
 import { estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
 import type { Sesion } from "@/lib/sesion";
@@ -32,6 +33,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
   const [cocheParaSalida, setCocheParaSalida] = useState<Coche | null>(null);
   const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
   const [cocheParaConsignas, setCocheParaConsignas] = useState<Coche | null>(null);
+  const [cocheParaReingreso, setCocheParaReingreso] = useState<Coche | null>(null);
   const [exportarAbierto, setExportarAbierto] = useState(false);
   // Por defecto solo se muestran los coches que siguen en la base, que es
   // el caso de uso más habitual; el operario puede cambiarlo cuando quiera.
@@ -59,6 +61,18 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
     const url = `/api/export?filtro=${filtroExport}&q=${encodeURIComponent(query)}`;
     window.open(url, "_blank");
     setExportarAbierto(false);
+  };
+
+  const confirmarReingreso = async () => {
+    if (!cocheParaReingreso) return;
+    const id = cocheParaReingreso.id;
+    setCocheParaReingreso(null);
+    await fetch(`/api/coches/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion: "revertir_salida" }),
+    });
+    cargar(query);
   };
 
   const cerrarSesion = async () => {
@@ -148,6 +162,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
                 key={coche.id}
                 coche={coche}
                 onPedirSalida={setCocheParaSalida}
+                onRevertirSalida={setCocheParaReingreso}
                 onEditar={setCocheParaEditar}
                 onConsignas={setCocheParaConsignas}
                 puedeGestionar={puedeGestionar}
@@ -199,6 +214,19 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
               abierto={exportarAbierto}
               onCerrar={() => setExportarAbierto(false)}
               onElegir={elegirExportacion}
+            />
+
+            <ConfirmModal
+              abierto={!!cocheParaReingreso}
+              titulo="¿Deshacer la salida?"
+              mensaje={
+                cocheParaReingreso
+                  ? `El coche con matrícula ${cocheParaReingreso.matricula} volverá a quedar activo en la base.`
+                  : undefined
+              }
+              textoConfirmar="Deshacer salida"
+              onConfirmar={confirmarReingreso}
+              onCancelar={() => setCocheParaReingreso(null)}
             />
           </>
         )}
