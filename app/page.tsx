@@ -1,72 +1,54 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import Dashboard from "@/components/Dashboard";
+import { obtenerSesionActual } from "@/lib/sesion";
 
-// Configuración de la ventana gráfica (Viewport)
-export const viewport: Viewport = {
-  themeColor: "#000000", // Cambia esto al color principal de tu marca
-  width: "device-width",
-  initialScale: 1,
-};
-
-// Metadatos globales de la aplicación
+// Configuración de Metadatos y Favicon para esta página
 export const metadata: Metadata = {
-  title: {
-    default: "Mi Aplicación",
-    template: "%s | Mi Aplicación", // Ejemplo: "Dashboard | Mi Aplicación"
-  },
+  title: "Dashboard | Mi Aplicación",
   description: "Panel de control y gestión para usuarios.",
 
-  // Favicons e Iconos de la App
+  // Iconos y Favicon
   icons: {
     icon: [
       { url: "/favicon.png" },
-      { url: "/favicon.png", type: "image/png" },
+      { url: "/icon.png", type: "image/png" },
     ],
     apple: [
-      { url: "/favicon.png", sizes: "180x180", type: "image/png" },
+      { url: "/apple-icon.png", sizes: "180x180", type: "image/png" },
     ],
   },
 
-  // Open Graph (Vista previa al compartir en Facebook, WhatsApp, LinkedIn, etc.)
+  // Vista previa en redes sociales (Open Graph / Twitter)
   openGraph: {
-    title: "Mi Aplicación",
+    title: "Dashboard | Mi Aplicación",
     description: "Panel de control y gestión para usuarios.",
-    url: "https://asistencia-del-toro.vercel.app/",
-    siteName: "Mi Aplicación",
-    locale: "es_ES",
     type: "website",
     images: [
       {
-        url: "https://asistencia-del-toro.vercel.app/og-image.png", // Imagen de 1200x630px
+        url: "/og-image.png", // Ubicado en la carpeta /public
         width: 1200,
         height: 630,
-        alt: "Mi Aplicación",
+        alt: "Dashboard Preview",
       },
     ],
   },
-
-  // Tarjeta para Twitter / X
   twitter: {
     card: "summary_large_image",
-    title: "Mi Aplicación",
+    title: "Dashboard | Mi Aplicación",
     description: "Panel de control y gestión para usuarios.",
-    images: ["https://asistencia-del-toro.vercel.app/og-image.png"],
-  },
-
-  // Robots / Indexación
-  robots: {
-    index: true,
-    follow: true,
+    images: ["/og-image.png"],
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="es">
-      <body>{children}</body>
-    </html>
-  );
+export default async function Page() {
+  // El middleware ya garantiza que si llegamos aquí hay sesión válida y
+  // aprobada, pero se comprueba también aquí por si acaso (defensa en
+  // profundidad) en vez de inventar una sesión falsa.
+  const sesion = await obtenerSesionActual();
+  if (!sesion) {
+    redirect("/login");
+  }
+
+  return <Dashboard sesion={sesion} />;
 }
