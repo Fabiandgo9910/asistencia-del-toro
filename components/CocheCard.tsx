@@ -245,9 +245,12 @@ export default function CocheCard({
       {/* 7. Observaciones: se despliega al clicar arriba en la tarjeta. Es
           la única sección que cambia de alto a propósito (es una acción
           explícita de quien lo abre, no depende de cuántos datos tenga el
-          coche), así que las demás tarjetas de la fila no se mueven. */}
+          coche), así que las demás tarjetas de la fila no se mueven.
+          break-words evita que una palabra/URL muy larga se salga del
+          recuadro, y el scroll interno (max-h + overflow-y-auto) limita
+          cuánto puede crecer la tarjeta aunque el texto sea larguísimo. */}
       {mostrarObs && (
-        <p className="rounded-card bg-toro-bg p-2 text-xs text-toro-slate">
+        <p className="max-h-40 overflow-y-auto whitespace-pre-wrap break-words rounded-card bg-toro-bg p-2 text-xs leading-relaxed text-toro-slate">
           {coche.observaciones?.trim() ? coche.observaciones : "Sin observaciones."}
         </p>
       )}
