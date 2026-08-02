@@ -88,25 +88,59 @@ $$;
 -- rol = 'super_admin' y aprobado = true.
 
 -- ----------------------------------------------------------------------------
--- 2) COCHES
+-- 2) BASES (ubicaciones donde puede estar un coche)
+-- ----------------------------------------------------------------------------
+
+create table if not exists public.bases (
+  id         bigint generated always as identity primary key,
+  numero     text not null,
+  nombre     text not null,
+  direccion  text,
+  creado_en  timestamptz not null default now()
+);
+
+create unique index if not exists idx_bases_numero on public.bases (lower(numero));
+
+alter table public.bases enable row level security;
+
+drop policy if exists "Ver bases" on public.bases;
+create policy "Ver bases"
+  on public.bases for select
+  using (exists (select 1 from public.perfiles p where p.id = auth.uid() and p.aprobado));
+
+drop policy if exists "Crear bases" on public.bases;
+create policy "Crear bases"
+  on public.bases for insert
+  with check (public.rol_actual() in ('admin', 'oficinista', 'super_admin'));
+
+drop policy if exists "Editar bases" on public.bases;
+create policy "Editar bases"
+  on public.bases for update
+  using (public.rol_actual() in ('admin', 'oficinista', 'super_admin'));
+
+-- ----------------------------------------------------------------------------
+-- 3) COCHES
 -- ----------------------------------------------------------------------------
 
 create table if not exists public.coches (
   id                 bigint generated always as identity primary key,
-  plaza              integer,
+  plaza              text, -- admite letras (ej. "P12"), no solo números
   fecha_entrada      date not null default current_date,
   tiene_llave        boolean not null default false,
   esta_calcinado     boolean not null default false,
-  traslado           varchar(255),
-  empresa_traslado   varchar(255),
+  traslado           text,
+  traslado_previsto  boolean not null default false, -- se prevé que saldrá por traslado
+  empresa_traslado   text,
   fecha_traslado     date,
   fecha_destino      date, -- fecha PREVISTA de salida (aún no ha salido, pero ya tiene destino asignado)
   bloqueado          boolean not null default false,
-  matricula          varchar(20) not null,
-  modelo             varchar(120),
-  numero_expediente  varchar(80),
+  matricula          text not null,
+  modelo             text,
+  tipo_vehiculo      text not null default 'coche' check (tipo_vehiculo in ('coche', 'moto')),
+  numero_expediente  text,
   fecha_salida       timestamp,
-  observaciones      text
+  observaciones      text,
+  base_id            bigint references public.bases (id)
 );
 
 create index if not exists idx_coches_matricula on public.coches (matricula);
@@ -157,14 +191,14 @@ create policy "Eliminar coches"
   using (public.rol_actual() in ('admin', 'oficinista', 'super_admin'));
 
 -- ----------------------------------------------------------------------------
--- 3) CONSIGNAS (varias por coche, con fecha y observación)
+-- 4) CONSIGNAS (varias por coche, con fecha y observación)
 -- ----------------------------------------------------------------------------
 
 create table if not exists public.consignas (
   id           bigint generated always as identity primary key,
   coche_id     bigint not null references public.coches (id) on delete cascade,
   fecha        date not null default current_date,
-  observacion  varchar(255)
+  observacion  text
 );
 
 create index if not exists idx_consignas_coche on public.consignas (coche_id);
@@ -186,18 +220,25 @@ create policy "Eliminar consignas"
   on public.consignas for delete
   using (public.rol_actual() in ('admin', 'oficinista', 'super_admin'));
 
+drop policy if exists "Editar consignas" on public.consignas;
+create policy "Editar consignas"
+  on public.consignas for update
+  using (public.rol_actual() in ('admin', 'oficinista', 'super_admin'));
+
 -- ----------------------------------------------------------------------------
--- 4) VISTA CON LOS CÁLCULOS DE CUSTODIA (días, penalización, vencimiento…)
+-- 5) VISTA CON LOS CÁLCULOS DE CUSTODIA (días, penalización, vencimiento…)
 -- ----------------------------------------------------------------------------
 -- Reglas: 3 días propios + 9 días Mapfre = 12 días cubiertos. A partir del
 -- día 13, 13€/día de penalización. "Próximo a vencer" = sin penalización
--- todavía, pero a 2 días o menos del día 12.
+-- todavía, activo, sin fecha de salida prevista, y a 5 días o menos del
+-- día 12.
 
 create or replace view public.coches_calculado as
 select
   c.id, c.plaza, c.fecha_entrada, c.tiene_llave, c.esta_calcinado, c.bloqueado, c.traslado,
-  c.empresa_traslado, c.fecha_traslado, c.fecha_destino, c.matricula, c.modelo,
-  c.numero_expediente, c.fecha_salida, c.observaciones,
+  c.traslado_previsto, c.empresa_traslado, c.fecha_traslado, c.fecha_destino, c.matricula, c.modelo,
+  c.tipo_vehiculo, c.numero_expediente, c.fecha_salida, c.observaciones, c.base_id,
+  b.numero as base_numero, b.nombre as base_nombre,
   (c.fecha_salida is null and c.fecha_destino is not null) as tiene_destino,
   (select max(fecha) from public.consignas where consignas.coche_id = c.id) as ultima_consigna,
   greatest(
@@ -235,16 +276,17 @@ select
         date_part('day', coalesce(c.fecha_salida, c.fecha_destino::timestamp, now()) - c.fecha_entrada::timestamp)::int,
         0
       )
-    ) between 0 and 3
+    ) between 0 and 5
   ) as proximo_a_vencer
-from public.coches c;
+from public.coches c
+left join public.bases b on b.id = c.base_id;
 
 -- Las vistas heredan los permisos de quien consulta junto con la RLS de
 -- las tablas base (coches/consignas), así que no hace falta activar RLS
 -- ni crear políticas aparte para esta vista.
 
 -- ----------------------------------------------------------------------------
--- 5) LIMPIEZA AUTOMÁTICA (retención de 1 año) — con pg_cron, sin Vercel
+-- 6) LIMPIEZA AUTOMÁTICA (retención de 1 año) — con pg_cron, sin Vercel
 -- ----------------------------------------------------------------------------
 
 create or replace function public.limpiar_registros_antiguos()

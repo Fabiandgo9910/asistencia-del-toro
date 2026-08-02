@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Trash2, Save } from "lucide-react";
+import { X, Trash2, Save, Car, Bike } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
-import type { Coche } from "@/types/coche";
+import SelectorBase from "./SelectorBase";
+import type { Coche, TipoVehiculo } from "@/types/coche";
 
 export default function EditarCocheModal({
   coche,
@@ -18,12 +19,15 @@ export default function EditarCocheModal({
 }) {
   const [matricula, setMatricula] = useState("");
   const [modelo, setModelo] = useState("");
+  const [tipoVehiculo, setTipoVehiculo] = useState<TipoVehiculo>("coche");
   const [plaza, setPlaza] = useState("");
   const [expediente, setExpediente] = useState("");
   const [fecha, setFecha] = useState("");
+  const [baseId, setBaseId] = useState<number | null>(null);
   const [tieneLlave, setTieneLlave] = useState(true);
   const [calcinado, setCalcinado] = useState(false);
   const [bloqueado, setBloqueado] = useState(false);
+  const [trasladoPrevisto, setTrasladoPrevisto] = useState(false);
   const [observaciones, setObservaciones] = useState("");
   const [fechaDestino, setFechaDestino] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -37,12 +41,15 @@ export default function EditarCocheModal({
     if (coche) {
       setMatricula(coche.matricula);
       setModelo(coche.modelo ?? "");
-      setPlaza(coche.plaza != null ? String(coche.plaza) : "");
+      setTipoVehiculo(coche.tipo_vehiculo);
+      setPlaza(coche.plaza ?? "");
       setExpediente(coche.numero_expediente ?? "");
       setFecha(coche.fecha_entrada?.slice(0, 10) ?? "");
+      setBaseId(coche.base_id);
       setTieneLlave(coche.tiene_llave);
       setCalcinado(coche.esta_calcinado);
       setBloqueado(coche.bloqueado);
+      setTrasladoPrevisto(coche.traslado_previsto);
       setObservaciones(coche.observaciones ?? "");
       setFechaDestino(coche.fecha_destino?.slice(0, 10) ?? "");
       setError(null);
@@ -62,12 +69,15 @@ export default function EditarCocheModal({
         body: JSON.stringify({
           matricula,
           modelo: modelo || null,
-          plaza: plaza ? Number(plaza) : null,
+          tipo_vehiculo: tipoVehiculo,
+          plaza: plaza.trim() || null,
           numero_expediente: expediente || null,
           fecha_entrada: fecha,
+          base_id: baseId,
           tiene_llave: tieneLlave,
           esta_calcinado: calcinado,
           bloqueado,
+          traslado_previsto: trasladoPrevisto,
           observaciones,
           fecha_destino: fechaDestino || null,
         }),
@@ -113,7 +123,7 @@ export default function EditarCocheModal({
   return (
     <>
       <div className="fixed inset-0 z-20 flex items-end justify-center bg-toro-ink/40 sm:items-center">
-        <div className="w-full max-w-md rounded-t-card bg-toro-surface p-5 shadow-card sm:rounded-card">
+        <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-card bg-toro-surface p-5 shadow-card sm:rounded-card">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-base font-semibold text-toro-ink">Editar expediente</h2>
             <button onClick={onCerrar} className="text-toro-slate hover:text-toro-ink">
@@ -122,34 +132,65 @@ export default function EditarCocheModal({
           </div>
 
           <div className="space-y-3">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setTipoVehiculo("coche")}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-card border py-2.5 text-sm font-medium transition ${
+                  tipoVehiculo === "coche"
+                    ? "border-toro-red/50 bg-toro-warnBg/40 text-toro-ink"
+                    : "border-toro-line text-toro-slate"
+                }`}
+              >
+                <Car size={16} /> Coche
+              </button>
+              <button
+                type="button"
+                onClick={() => setTipoVehiculo("moto")}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-card border py-2.5 text-sm font-medium transition ${
+                  tipoVehiculo === "moto"
+                    ? "border-toro-red/50 bg-toro-warnBg/40 text-toro-ink"
+                    : "border-toro-line text-toro-slate"
+                }`}
+              >
+                <Bike size={16} /> Moto
+              </button>
+            </div>
+
             <input
               autoFocus
               value={matricula}
               onChange={(e) => setMatricula(e.target.value.toUpperCase())}
               placeholder="Matrícula *"
+              maxLength={20}
               className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm uppercase tracking-wide outline-none focus:border-toro-red/40"
             />
             <input
               value={modelo}
               onChange={(e) => setModelo(e.target.value)}
               placeholder="Modelo"
+              maxLength={100}
               className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
             />
             <div className="flex gap-3">
               <input
                 value={plaza}
-                onChange={(e) => setPlaza(e.target.value.replace(/\D/g, ""))}
-                placeholder="Plaza"
-                inputMode="numeric"
+                onChange={(e) => setPlaza(e.target.value)}
+                placeholder="Plaza (ej. 12 o P-12)"
+                maxLength={20}
                 className="w-1/2 rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
               />
               <input
                 value={expediente}
                 onChange={(e) => setExpediente(e.target.value)}
                 placeholder="Nº expediente"
+                maxLength={50}
                 className="w-1/2 rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
               />
             </div>
+
+            <SelectorBase baseId={baseId} onChange={setBaseId} />
+
             <label className="flex items-center justify-between text-sm text-toro-slate">
               Fecha de entrada
               <input
@@ -187,6 +228,14 @@ export default function EditarCocheModal({
                     Con destino asignado, la custodia se calculará hasta esa fecha, no hasta hoy.
                   </p>
                 )}
+                <label className="flex items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
+                  <input
+                    type="checkbox"
+                    checked={trasladoPrevisto}
+                    onChange={(e) => setTrasladoPrevisto(e.target.checked)}
+                  />
+                  Se prevé que salga por traslado
+                </label>
               </>
             )}
             <div className="flex flex-wrap gap-2 pt-1">
@@ -219,8 +268,9 @@ export default function EditarCocheModal({
               value={observaciones}
               onChange={(e) => setObservaciones(e.target.value)}
               placeholder="Observaciones"
-              rows={2}
-              className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
+              rows={3}
+              maxLength={2000}
+              className="w-full resize-y rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
             />
           </div>
 

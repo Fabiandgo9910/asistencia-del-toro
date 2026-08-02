@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, Pencil, Save, XCircle } from "lucide-react";
 import type { Coche, Consigna } from "@/types/coche";
 
 const hoy = () => new Date().toISOString().slice(0, 10);
@@ -23,6 +23,9 @@ export default function ConsignasModal({
   const [observacion, setObservacion] = useState("");
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Si no es null, el formulario de arriba está editando esta consigna en
+  // vez de crear una nueva.
+  const [editandoId, setEditandoId] = useState<number | null>(null);
 
   const cargar = async (cocheId: number) => {
     setCargando(true);
@@ -36,6 +39,7 @@ export default function ConsignasModal({
     if (coche) {
       setFecha(hoy());
       setObservacion("");
+      setEditandoId(null);
       setError(null);
       cargar(coche.id);
     }
@@ -43,18 +47,38 @@ export default function ConsignasModal({
 
   if (!coche) return null;
 
-  const añadir = async () => {
+  const empezarEdicion = (c: Consigna) => {
+    setEditandoId(c.id);
+    setFecha(c.fecha.slice(0, 10));
+    setObservacion(c.observacion ?? "");
+    setError(null);
+  };
+
+  const cancelarEdicion = () => {
+    setEditandoId(null);
+    setFecha(hoy());
+    setObservacion("");
+    setError(null);
+  };
+
+  const guardar = async () => {
     setGuardando(true);
     setError(null);
     try {
-      const res = await fetch(`/api/coches/${coche.id}/consignas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fecha, observacion }),
-      });
+      const res = editandoId
+        ? await fetch(`/api/consignas/${editandoId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fecha, observacion }),
+          })
+        : await fetch(`/api/coches/${coche.id}/consignas`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fecha, observacion }),
+          });
+
       if (res.ok) {
-        setObservacion("");
-        setFecha(hoy());
+        cancelarEdicion();
         await cargar(coche.id);
         onCambio();
       } else {
@@ -69,6 +93,7 @@ export default function ConsignasModal({
   };
 
   const eliminar = async (id: number) => {
+    if (editandoId === id) cancelarEdicion();
     await fetch(`/api/consignas/${id}`, { method: "DELETE" });
     await cargar(coche.id);
     onCambio();
@@ -86,8 +111,16 @@ export default function ConsignasModal({
           </button>
         </div>
 
-        {/* Añadir una nueva consigna */}
+        {/* Añadir / editar una consigna */}
         <div className="mb-4 space-y-2 rounded-card bg-toro-bg p-3">
+          {editandoId && (
+            <div className="flex items-center justify-between text-xs font-medium text-toro-slate">
+              Editando consigna
+              <button onClick={cancelarEdicion} className="flex items-center gap-1 text-toro-slate hover:text-toro-ink">
+                <XCircle size={13} /> Cancelar
+              </button>
+            </div>
+          )}
           <div className="flex gap-2">
             <input
               type="date"
@@ -98,17 +131,17 @@ export default function ConsignasModal({
             <input
               value={observacion}
               onChange={(e) => setObservacion(e.target.value)}
-              placeholder="Observación breve"
+              placeholder="Observación"
               className="flex-1 rounded-card border border-toro-line bg-toro-surface px-3 py-2 text-sm outline-none focus:border-toro-red/40"
             />
           </div>
           <button
-            onClick={añadir}
+            onClick={guardar}
             disabled={guardando}
             className="flex w-full items-center justify-center gap-1.5 rounded-card bg-toro-red py-2 text-sm font-semibold text-white transition hover:bg-toro-redDark disabled:opacity-40"
           >
-            <Plus size={16} />
-            {guardando ? "Guardando…" : "Añadir consigna"}
+            {editandoId ? <Save size={16} /> : <Plus size={16} />}
+            {guardando ? "Guardando…" : editandoId ? "Guardar cambios" : "Añadir consigna"}
           </button>
           {error && <p className="text-xs text-toro-red">{error}</p>}
         </div>
@@ -125,19 +158,32 @@ export default function ConsignasModal({
             {consignas.map((c) => (
               <li
                 key={c.id}
-                className="flex items-start justify-between gap-2 rounded-card border border-toro-line p-2.5 text-sm"
+                className={`flex items-start justify-between gap-2 rounded-card border p-2.5 text-sm ${
+                  editandoId === c.id ? "border-toro-red/40 bg-toro-warnBg/30" : "border-toro-line"
+                }`}
               >
-                <div>
+                <div className="min-w-0">
                   <p className="tabular font-medium text-toro-ink">{fmt(c.fecha)}</p>
-                  {c.observacion && <p className="text-xs text-toro-slate">{c.observacion}</p>}
+                  {c.observacion && (
+                    <p className="whitespace-pre-wrap break-words text-xs text-toro-slate">{c.observacion}</p>
+                  )}
                 </div>
-                <button
-                  onClick={() => eliminar(c.id)}
-                  title="Eliminar esta consigna"
-                  className="shrink-0 text-toro-slate/60 transition hover:text-toro-red"
-                >
-                  <Trash2 size={14} />
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    onClick={() => empezarEdicion(c)}
+                    title="Editar esta consigna"
+                    className="text-toro-slate/60 transition hover:text-toro-ink"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={() => eliminar(c.id)}
+                    title="Eliminar esta consigna"
+                    className="text-toro-slate/60 transition hover:text-toro-red"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>

@@ -9,17 +9,18 @@ const fmtFecha = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-ES") : "";
 
 // Ancho de cada columna en puntos (pt), en el mismo orden que la hoja base:
-// PLAZA | LL | EXPEDIENTE | VEHÍCULO | MATRICULA | FECHA | DESTINO | CONSIGNA | FECHA
+// PLAZA | LL | EXPEDIENTE | VEHÍCULO | MATRICULA | FECHA | DESTINO | CONSIGNA | FECHA | OBSERVACIONES
 const COLUMNAS: { titulo: string; ancho: number; align?: "left" | "center" }[] = [
-  { titulo: "PLAZA", ancho: 45 },
-  { titulo: "LL", ancho: 30 },
-  { titulo: "EXPEDIENTE", ancho: 85 },
-  { titulo: "VEHÍCULO", ancho: 130, align: "left" },
-  { titulo: "MATRICULA", ancho: 80 },
-  { titulo: "FECHA", ancho: 65 },
-  { titulo: "DESTINO", ancho: 130, align: "left" },
+  { titulo: "PLAZA", ancho: 40 },
+  { titulo: "LL", ancho: 26 },
+  { titulo: "EXPEDIENTE", ancho: 75 },
+  { titulo: "VEHÍCULO", ancho: 110, align: "left" },
+  { titulo: "MATRICULA", ancho: 72 },
+  { titulo: "FECHA", ancho: 58 },
+  { titulo: "DESTINO", ancho: 95, align: "left" },
   { titulo: "CONSIGNA", ancho: 60 },
-  { titulo: "FECHA", ancho: 65 },
+  { titulo: "FECHA", ancho: 58 },
+  { titulo: "OBSERVACIONES", ancho: 122, align: "left" },
 ];
 
 // GET /api/export?filtro=vencidos|con_salida|en_base&q=opcional
@@ -107,9 +108,10 @@ export async function GET(req: NextRequest) {
           c.modelo ?? "",
           c.matricula,
           fmtFecha(c.fecha_entrada),
-          c.traslado ?? "",
+          c.tiene_destino ? "Ver albarán" : c.traslado ?? "",
           c.ultima_consigna ? "Sí" : "",
           fmtFecha(c.ultima_consigna),
+          c.observaciones ?? "",
         ],
         COLUMNAS,
         x0

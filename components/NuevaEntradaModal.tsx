@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Car, Bike } from "lucide-react";
+import SelectorBase from "./SelectorBase";
+import type { TipoVehiculo } from "@/types/coche";
 
 const hoy = () => new Date().toISOString().slice(0, 10);
 
@@ -18,10 +20,12 @@ export default function NuevaEntradaModal({
 }) {
   const [matricula, setMatricula] = useState("");
   const [modelo, setModelo] = useState("");
+  const [tipoVehiculo, setTipoVehiculo] = useState<TipoVehiculo>("coche");
   const [plaza, setPlaza] = useState("");
   const [expediente, setExpediente] = useState("");
   const [fecha, setFecha] = useState(hoy());
   const [fechaDestino, setFechaDestino] = useState("");
+  const [baseId, setBaseId] = useState<number | null>(null);
   const [tieneLlave, setTieneLlave] = useState(true);
   const [calcinado, setCalcinado] = useState(false);
   const [bloqueado, setBloqueado] = useState(false);
@@ -34,10 +38,12 @@ export default function NuevaEntradaModal({
   const limpiar = () => {
     setMatricula("");
     setModelo("");
+    setTipoVehiculo("coche");
     setPlaza("");
     setExpediente("");
     setFecha(hoy());
     setFechaDestino("");
+    setBaseId(null);
     setTieneLlave(true);
     setCalcinado(false);
     setBloqueado(false);
@@ -55,10 +61,12 @@ export default function NuevaEntradaModal({
         body: JSON.stringify({
           matricula,
           modelo,
-          plaza: plaza ? Number(plaza) : null,
+          tipo_vehiculo: tipoVehiculo,
+          plaza: plaza.trim() || null,
           numero_expediente: expediente,
           fecha_entrada: fecha,
           fecha_destino: fechaDestino || null,
+          base_id: baseId,
           tiene_llave: tieneLlave,
           esta_calcinado: calcinado,
           bloqueado,
@@ -91,34 +99,66 @@ export default function NuevaEntradaModal({
         </div>
 
         <div className="space-y-3">
+          {/* Coche o moto */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setTipoVehiculo("coche")}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-card border py-2.5 text-sm font-medium transition ${
+                tipoVehiculo === "coche"
+                  ? "border-toro-red/50 bg-toro-warnBg/40 text-toro-ink"
+                  : "border-toro-line text-toro-slate"
+              }`}
+            >
+              <Car size={16} /> Coche
+            </button>
+            <button
+              type="button"
+              onClick={() => setTipoVehiculo("moto")}
+              className={`flex flex-1 items-center justify-center gap-1.5 rounded-card border py-2.5 text-sm font-medium transition ${
+                tipoVehiculo === "moto"
+                  ? "border-toro-red/50 bg-toro-warnBg/40 text-toro-ink"
+                  : "border-toro-line text-toro-slate"
+              }`}
+            >
+              <Bike size={16} /> Moto
+            </button>
+          </div>
+
           <input
             autoFocus
             value={matricula}
             onChange={(e) => setMatricula(e.target.value.toUpperCase())}
             placeholder="Matrícula *"
+            maxLength={20}
             className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm uppercase tracking-wide outline-none focus:border-toro-red/40"
           />
           <input
             value={modelo}
             onChange={(e) => setModelo(e.target.value)}
             placeholder="Modelo"
+            maxLength={100}
             className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
           />
           <div className="flex gap-3">
             <input
               value={plaza}
-              onChange={(e) => setPlaza(e.target.value.replace(/\D/g, ""))}
-              placeholder="Plaza"
-              inputMode="numeric"
+              onChange={(e) => setPlaza(e.target.value)}
+              placeholder="Plaza (ej. 12 o P-12)"
+              maxLength={20}
               className="w-1/2 rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
             />
             <input
               value={expediente}
               onChange={(e) => setExpediente(e.target.value)}
               placeholder="Nº expediente"
+              maxLength={50}
               className="w-1/2 rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
             />
           </div>
+
+          <SelectorBase baseId={baseId} onChange={setBaseId} />
+
           <label className="flex items-center justify-between text-sm text-toro-slate">
             Fecha de entrada
             <input
@@ -169,8 +209,9 @@ export default function NuevaEntradaModal({
             value={observaciones}
             onChange={(e) => setObservaciones(e.target.value)}
             placeholder="Observaciones"
-            rows={2}
-            className="w-full rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
+            rows={3}
+            maxLength={2000}
+            className="w-full resize-y rounded-card border border-toro-line px-3 py-2.5 text-sm outline-none focus:border-toro-red/40"
           />
         </div>
 

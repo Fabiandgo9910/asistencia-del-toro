@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Key, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle, FileText, RotateCcw } from "lucide-react";
+import { Key, KeyRound, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle, FileText, RotateCcw, Car, Bike, Building2 } from "lucide-react";
 import MatriculaBadge from "./MatriculaBadge";
 import { diasParaVencer as calcDiasParaVencer, estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
@@ -41,6 +41,7 @@ export default function CocheCard({
   onRevertirSalida,
   onEditar,
   onConsignas,
+  onToggleTrasladoPrevisto,
   puedeGestionar,
 }: {
   coche: Coche;
@@ -48,18 +49,19 @@ export default function CocheCard({
   onRevertirSalida: (coche: Coche) => void;
   onEditar: (coche: Coche) => void;
   onConsignas: (coche: Coche) => void;
+  onToggleTrasladoPrevisto: (coche: Coche, valor: boolean) => void;
   puedeGestionar: boolean;
 }) {
   const [mostrarObs, setMostrarObs] = useState(false);
   const activo = !coche.fecha_salida;
   const tieneDeuda = coche.penalizacion > 0;
+  const esMoto = coche.tipo_vehiculo === "moto";
 
   // A punto de vencerse la custodia: aún no vencida (sin días extra) pero a
-  // 2 días o menos del día 12 -> aviso amarillo para adelantarse con la consigna.
+  // 5 días o menos del día 12 -> aviso amarillo para adelantarse con la consigna.
   const diasParaVencer = calcDiasParaVencer(coche.dias_totales, coche.dias_extra);
   const proximoAVencer = estaProximoAVencer(coche.dias_totales, coche.dias_extra, activo, coche.tiene_destino);
 
-  const hayEstadoFisico = coche.tiene_llave || coche.esta_calcinado || coche.bloqueado;
   const hayConsignaOAviso = coche.ultima_consigna || proximoAVencer;
 
   // Todas las tarjetas dibujan exactamente los mismos bloques, en el mismo
@@ -80,12 +82,15 @@ export default function CocheCard({
       >
         <div className="flex flex-wrap items-center gap-2">
           <MatriculaBadge matricula={coche.matricula} />
+          <span title={esMoto ? "Moto" : "Coche"} className="text-toro-slate">
+            {esMoto ? <Bike size={15} /> : <Car size={15} />}
+          </span>
           {coche.modelo && (
             <span className="min-w-0 truncate text-sm font-medium text-toro-ink">{coche.modelo}</span>
           )}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-toro-slate">
-          {coche.plaza != null && (
+          {coche.plaza != null && coche.plaza !== "" && (
             <span className="flex items-center gap-1">
               <MapPin size={12} /> Plaza {coche.plaza}
             </span>
@@ -93,6 +98,12 @@ export default function CocheCard({
           {coche.numero_expediente && (
             <span className="flex items-center gap-1">
               <FileText size={12} /> Exp. {coche.numero_expediente}
+            </span>
+          )}
+          {coche.base_nombre && (
+            <span className="flex items-center gap-1">
+              <Building2 size={12} />
+              {coche.base_numero ? `${coche.base_numero} · ${coche.base_nombre}` : coche.base_nombre}
             </span>
           )}
           <span>{coche.dias_totales} días{activo ? " en curso" : ""}</span>
@@ -136,6 +147,25 @@ export default function CocheCard({
           </span>
         )}
 
+        {activo && (
+          <label
+            className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium ${
+              coche.traslado_previsto ? "bg-toro-amberBg text-toro-amber" : "text-toro-slate"
+            } ${puedeGestionar ? "cursor-pointer" : ""}`}
+            title="Se prevé que salga por traslado"
+          >
+            <input
+              type="checkbox"
+              checked={coche.traslado_previsto}
+              disabled={!puedeGestionar}
+              onChange={(e) => onToggleTrasladoPrevisto(coche, e.target.checked)}
+              className="accent-toro-red"
+            />
+            <Truck size={13} />
+            Traslado previsto
+          </label>
+        )}
+
         {puedeGestionar && (
           <div className="ml-auto flex shrink-0 items-center gap-1.5">
             <button
@@ -167,26 +197,26 @@ export default function CocheCard({
       </div>
 
       {/* 4. Estado físico del coche: llave / calcinado / bloqueado.
-          Altura reservada siempre. */}
+          Siempre muestra al menos si tiene llave o no. */}
       <div className="flex min-h-[24px] flex-wrap gap-1.5">
-        {hayEstadoFisico && (
-          <>
-            {coche.tiene_llave && (
-              <span className="flex items-center gap-1 rounded-full bg-toro-bg px-2 py-0.5 text-[11px] text-toro-slate">
-                <Key size={11} /> Tiene llave
-              </span>
-            )}
-            {coche.esta_calcinado && (
-              <span className="flex items-center gap-1 rounded-full bg-toro-warnBg px-2 py-0.5 text-[11px] text-toro-red">
-                <Flame size={11} /> Está calcinado
-              </span>
-            )}
-            {coche.bloqueado && (
-              <span className="flex items-center gap-1 rounded-full bg-toro-warnBg px-2 py-0.5 text-[11px] font-medium text-toro-red">
-                <Lock size={11} /> Bloqueado
-              </span>
-            )}
-          </>
+        {coche.tiene_llave ? (
+          <span className="flex items-center gap-1 rounded-full bg-toro-bg px-2 py-0.5 text-[11px] text-toro-slate">
+            <Key size={11} /> Tiene llave
+          </span>
+        ) : (
+          <span className="flex items-center gap-1 rounded-full bg-toro-warnBg px-2 py-0.5 text-[11px] font-medium text-toro-red">
+            <KeyRound size={11} /> Sin llave
+          </span>
+        )}
+        {coche.esta_calcinado && (
+          <span className="flex items-center gap-1 rounded-full bg-toro-warnBg px-2 py-0.5 text-[11px] text-toro-red">
+            <Flame size={11} /> Está calcinado
+          </span>
+        )}
+        {coche.bloqueado && (
+          <span className="flex items-center gap-1 rounded-full bg-toro-warnBg px-2 py-0.5 text-[11px] font-medium text-toro-red">
+            <Lock size={11} /> Bloqueado
+          </span>
         )}
       </div>
 

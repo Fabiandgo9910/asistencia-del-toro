@@ -1,20 +1,27 @@
+export type TipoVehiculo = "coche" | "moto";
+
 export type Coche = {
   id: number;
-  plaza: number | null;
+  plaza: string | null; // admite letras (ej. "P12")
   fecha_entrada: string; // ISO date
   tiene_llave: boolean;
   esta_calcinado: boolean;
   bloqueado: boolean;
   traslado: string | null;
+  traslado_previsto: boolean; // se prevé que saldrá por traslado (marcable manualmente)
   empresa_traslado: string | null;
   fecha_traslado: string | null;
   fecha_destino: string | null; // fecha PREVISTA de salida (aún no ha salido)
   matricula: string;
   modelo: string | null;
+  tipo_vehiculo: TipoVehiculo;
   numero_expediente: string | null;
   fecha_salida: string | null; // timestamp ISO, null = activo
   observaciones: string | null;
+  base_id: number | null;
   // Calculado en servidor (SQL):
+  base_numero: string | null;
+  base_nombre: string | null;
   tiene_destino: boolean; // true si aún no salió pero ya tiene fecha_destino
   ultima_consigna: string | null; // fecha de la consigna más reciente
   dias_totales: number;
@@ -31,13 +38,22 @@ export type Consigna = {
   observacion: string | null;
 };
 
+export type Base = {
+  id: number;
+  numero: string;
+  nombre: string;
+  direccion: string | null;
+};
+
 export type NuevoCochePayload = {
-  plaza?: number | null;
+  plaza?: string | null;
   fecha_entrada?: string;
   matricula: string;
   modelo?: string;
+  tipo_vehiculo?: TipoVehiculo;
   numero_expediente?: string;
   tiene_llave?: boolean;
   esta_calcinado?: boolean;
   observaciones?: string;
+  base_id?: number | null;
 };

@@ -75,6 +75,21 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
     cargar(query);
   };
 
+  // Checkbox directo en la tarjeta: "se prevé que salga por traslado".
+  // Actualización optimista para que se note al instante en la tarjeta.
+  const toggleTrasladoPrevisto = async (coche: Coche, valor: boolean) => {
+    setCoches((prev) => prev.map((c) => (c.id === coche.id ? { ...c, traslado_previsto: valor } : c)));
+    const res = await fetch(`/api/coches/${coche.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ traslado_previsto: valor }),
+    });
+    if (!res.ok) {
+      // Revertir si falló (p. ej. un chofer no tiene permiso).
+      setCoches((prev) => prev.map((c) => (c.id === coche.id ? { ...c, traslado_previsto: !valor } : c)));
+    }
+  };
+
   const cerrarSesion = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -86,9 +101,12 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
     const activo = !c.fecha_salida;
     if (filtro === "en_base") return activo;
     if (filtro === "vencidos") {
-      return c.penalizacion > 0 || estaProximoAVencer(c.dias_totales, c.dias_extra, activo, c.tiene_destino);
+      // Un coche que ya salió no cuenta como "vencido" aunque en su
+      // momento se pasara de días: ya no está en la base.
+      return activo && (c.penalizacion > 0 || estaProximoAVencer(c.dias_totales, c.dias_extra, activo, c.tiene_destino));
     }
     if (filtro === "con_salida") return c.tiene_destino;
+    if (filtro === "salieron") return !activo;
     return true;
   });
 
@@ -96,6 +114,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
     en_base: "Ningún coche en base coincide con la búsqueda.",
     vencidos: "Ningún coche está vencido ni a punto de vencer ahora mismo.",
     con_salida: "Ningún coche con fecha de salida prevista coincide con la búsqueda.",
+    salieron: "Ningún coche que ya haya salido coincide con la búsqueda.",
     todos: `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`,
   }[filtro];
 
@@ -165,6 +184,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
                 onRevertirSalida={setCocheParaReingreso}
                 onEditar={setCocheParaEditar}
                 onConsignas={setCocheParaConsignas}
+                onToggleTrasladoPrevisto={toggleTrasladoPrevisto}
                 puedeGestionar={puedeGestionar}
               />
             ))}

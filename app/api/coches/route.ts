@@ -41,13 +41,15 @@ export async function POST(req: NextRequest) {
   }
 
   const chofer = esChofer(sesion.rol);
+  const tipoVehiculo = body.tipo_vehiculo === "moto" ? "moto" : "coche";
 
   try {
     const id = await crearCoche({
-      plaza: body.plaza ?? null,
+      plaza: body.plaza ? String(body.plaza) : null,
       fecha_entrada: body.fecha_entrada ?? new Date().toISOString().slice(0, 10),
       matricula: body.matricula,
       modelo: body.modelo ?? null,
+      tipo_vehiculo: tipoVehiculo,
       numero_expediente: body.numero_expediente ?? null,
       tiene_llave: Boolean(body.tiene_llave),
       esta_calcinado: Boolean(body.esta_calcinado),
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
       // el cliente la mande: se ignora por completo en el servidor.
       fecha_destino: chofer ? null : body.fecha_destino || null,
       observaciones: body.observaciones ?? null,
+      base_id: body.base_id ? Number(body.base_id) : null,
     });
     return NextResponse.json({ id }, { status: 201 });
   } catch (err) {

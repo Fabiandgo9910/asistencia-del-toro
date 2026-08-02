@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Coche, Consigna } from "@/types/coche";
+import type { Coche, Consigna, Base, TipoVehiculo } from "@/types/coche";
 
 // Todas las funciones de este archivo usan el cliente Supabase "de
 // servidor" (lib/supabase/server.ts), que lleva la sesión de quien hace
@@ -16,6 +16,7 @@ function lanzar(contexto: string, error: { message: string } | null): never {
 }
 
 // --- Coches (con los cálculos de custodia ya resueltos por la vista) ---
+// Orden: el más reciente primero (por fecha de entrada).
 
 export async function buscarCoches(query: string): Promise<Coche[]> {
   const q = query.trim();
@@ -26,7 +27,9 @@ export async function buscarCoches(query: string): Promise<Coche[]> {
       `matricula.ilike.${like},numero_expediente.ilike.${like},modelo.ilike.${like}`
     );
   }
-  const { data, error } = await consulta.order("fecha_entrada", { ascending: true });
+  const { data, error } = await consulta
+    .order("fecha_entrada", { ascending: false })
+    .order("id", { ascending: false });
   if (error) lanzar("Error al buscar coches", error);
   return (data ?? []) as Coche[];
 }
@@ -38,16 +41,18 @@ export async function obtenerCoche(id: number): Promise<Coche | null> {
 }
 
 export async function crearCoche(data: {
-  plaza: number | null;
+  plaza: string | null;
   fecha_entrada: string;
   matricula: string;
   modelo: string | null;
+  tipo_vehiculo: TipoVehiculo;
   numero_expediente: string | null;
   tiene_llave: boolean;
   esta_calcinado: boolean;
   bloqueado: boolean;
   fecha_destino: string | null;
   observaciones: string | null;
+  base_id: number | null;
 }): Promise<number> {
   const { data: fila, error } = await db()
     .from("coches")
@@ -56,12 +61,14 @@ export async function crearCoche(data: {
       fecha_entrada: data.fecha_entrada,
       matricula: data.matricula.toUpperCase(),
       modelo: data.modelo,
+      tipo_vehiculo: data.tipo_vehiculo,
       numero_expediente: data.numero_expediente,
       tiene_llave: data.tiene_llave,
       esta_calcinado: data.esta_calcinado,
       bloqueado: data.bloqueado,
       fecha_destino: data.fecha_destino,
       observaciones: data.observaciones,
+      base_id: data.base_id,
     })
     .select("id")
     .single();
@@ -119,8 +126,10 @@ export async function eliminarCoche(id: number) {
 }
 
 // --- Exportación ---
-// El operario elige uno de estos tres filtros a la hora de exportar:
-//   - vencidos:   coches con custodia ya vencida O a punto de vencer.
+// El operario elige uno de estos filtros a la hora de exportar:
+//   - vencidos:   coches ACTIVOS con custodia ya vencida O a punto de vencer
+//                 (uno que ya salió no cuenta como "vencido", aunque en su
+//                 momento se pasara de días: ya no está en la base).
 //   - con_salida: coches con fecha PREVISTA de salida pero aún no han salido.
 //   - en_base:    coches que todavía siguen en la base (no han salido).
 export type FiltroExportacion = "vencidos" | "con_salida" | "en_base";
@@ -133,7 +142,7 @@ export async function exportarPorFiltro(
   let consulta = db().from("coches_calculado").select("*");
 
   if (filtro === "vencidos") {
-    consulta = consulta.or("penalizacion.gt.0,proximo_a_vencer.eq.true");
+    consulta = consulta.is("fecha_salida", null).or("penalizacion.gt.0,proximo_a_vencer.eq.true");
   } else if (filtro === "con_salida") {
     consulta = consulta.eq("tiene_destino", true);
   } else {
@@ -147,7 +156,9 @@ export async function exportarPorFiltro(
     );
   }
 
-  const { data, error } = await consulta.order("fecha_entrada", { ascending: true });
+  const { data, error } = await consulta
+    .order("fecha_entrada", { ascending: false })
+    .order("id", { ascending: false });
   if (error) lanzar("Error al exportar", error);
   return (data ?? []) as Coche[];
 }
@@ -179,7 +190,40 @@ export async function crearConsigna(
   return data!.id as number;
 }
 
+export async function actualizarConsigna(
+  id: number,
+  campos: { fecha?: string; observacion?: string | null }
+) {
+  const { error } = await db().from("consignas").update(campos).eq("id", id);
+  if (error) lanzar("Error al actualizar la consigna", error);
+}
+
 export async function eliminarConsigna(id: number) {
   const { error } = await db().from("consignas").delete().eq("id", id);
   if (error) lanzar("Error al eliminar la consigna", error);
+}
+
+// --- Bases (ubicaciones) ---
+
+export async function listarBases(): Promise<Base[]> {
+  const { data, error } = await db()
+    .from("bases")
+    .select("id, numero, nombre, direccion")
+    .order("numero", { ascending: true });
+  if (error) lanzar("Error al listar bases", error);
+  return (data ?? []) as Base[];
+}
+
+export async function crearBase(data: {
+  numero: string;
+  nombre: string;
+  direccion: string | null;
+}): Promise<Base> {
+  const { data: fila, error } = await db()
+    .from("bases")
+    .insert({ numero: data.numero, nombre: data.nombre, direccion: data.direccion })
+    .select("id, numero, nombre, direccion")
+    .single();
+  if (error) lanzar("Error al crear la base", error);
+  return fila as Base;
 }

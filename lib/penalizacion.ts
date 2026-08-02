@@ -51,7 +51,7 @@ export function diasParaVencer(diasTotales: number, diasExtra: number): number |
   return diasExtra === 0 ? DIAS_CUBIERTOS - diasTotales : null;
 }
 
-// "Próximo a vencer": todavía no genera penalización, pero está a 3 días
+// "Próximo a vencer": todavía no genera penalización, pero está a 5 días
 // o menos del día 12 Y no tiene fecha de salida prevista. Si ya tiene una
 // fecha de salida prevista, no hace falta avisar (ya se sabe cuándo sale),
 // así que en ese caso no se muestra nada mientras no esté realmente vencido.
@@ -63,5 +63,5 @@ export function estaProximoAVencer(
 ): boolean {
   if (!activo || tieneDestino) return false;
   const faltan = diasParaVencer(diasTotales, diasExtra);
-  return faltan !== null && faltan <= 3 && faltan >= 0;
+  return faltan !== null && faltan <= 5 && faltan >= 0;
 }

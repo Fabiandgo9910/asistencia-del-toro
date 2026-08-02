@@ -13,7 +13,7 @@ const OPCIONES: {
   {
     valor: "vencidos",
     etiqueta: "Vencidos y a punto de vencer",
-    descripcion: "Custodia ya vencida, o a 2 días o menos de vencerse (para adelantar consignas).",
+    descripcion: "Custodia ya vencida, o a 5 días o menos de vencerse (para adelantar consignas).",
     icono: FileWarning,
   },
   {
