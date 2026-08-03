@@ -9,18 +9,20 @@ const fmtFecha = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-ES") : "";
 
 // Ancho de cada columna en puntos (pt), en el mismo orden que la hoja base:
-// PLAZA | LL | EXPEDIENTE | VEHÍCULO | MATRICULA | FECHA | DESTINO | CONSIGNA | FECHA | OBSERVACIONES
+// PLAZA | LL | TIPO | EXPEDIENTE | VEHÍCULO | MATRICULA | BASE | FECHA | DESTINO | CONSIGNA | FECHA | OBSERVACIONES
 const COLUMNAS: { titulo: string; ancho: number; align?: "left" | "center" }[] = [
-  { titulo: "PLAZA", ancho: 40 },
-  { titulo: "LL", ancho: 26 },
-  { titulo: "EXPEDIENTE", ancho: 75 },
-  { titulo: "VEHÍCULO", ancho: 110, align: "left" },
-  { titulo: "MATRICULA", ancho: 72 },
-  { titulo: "FECHA", ancho: 58 },
-  { titulo: "DESTINO", ancho: 95, align: "left" },
-  { titulo: "CONSIGNA", ancho: 60 },
-  { titulo: "FECHA", ancho: 58 },
-  { titulo: "OBSERVACIONES", ancho: 122, align: "left" },
+  { titulo: "PLAZA", ancho: 36 },
+  { titulo: "LL", ancho: 28 },
+  { titulo: "TIPO", ancho: 42 },
+  { titulo: "EXPEDIENTE", ancho: 65 },
+  { titulo: "VEHÍCULO", ancho: 95, align: "left" },
+  { titulo: "MATRICULA", ancho: 65 },
+  { titulo: "BASE", ancho: 80, align: "left" },
+  { titulo: "FECHA", ancho: 52 },
+  { titulo: "DESTINO", ancho: 120, align: "left" },
+  { titulo: "CONSIGNA", ancho: 55 },
+  { titulo: "FECHA", ancho: 52 },
+  { titulo: "OBSERVACIONES", ancho: 90, align: "left" },
 ];
 
 // GET /api/export?filtro=vencidos|con_salida|en_base&q=opcional
@@ -98,17 +100,33 @@ export async function GET(req: NextRequest) {
         });
       }
 
+      // DESTINO combina, cuando aplica, varios avisos en una sola celda:
+      // - "Ver albarán": ya tiene fecha de salida prevista.
+      // - "Custodia Mapfre": ya pasaron nuestros 3 días propios, así que
+      //   ahora corre la custodia de Mapfre (días 4 a 12).
+      // - "Traslado previsto": se marcó manualmente que se prevé que
+      //   salga por traslado.
+      const avisos: string[] = [];
+      if (c.tiene_destino) {
+        avisos.push("Ver albarán");
+        if (c.dias_totales > 3) avisos.push("Custodia Mapfre");
+      }
+      if (c.traslado_previsto) avisos.push("Traslado previsto");
+      const destino = avisos.length > 0 ? avisos.join(" · ") : c.traslado ?? "";
+
       y = dibujarFila(
         pagina,
         y,
         [
-          c.plaza != null ? String(c.plaza) : "",
-          c.tiene_llave ? "X" : "",
+          c.plaza ?? "",
+          c.tiene_llave ? "Sí" : "No",
+          c.tipo_vehiculo === "moto" ? "Moto" : "Coche",
           c.numero_expediente ?? "",
           c.modelo ?? "",
           c.matricula,
+          c.base_numero ? `${c.base_numero} - ${c.base_nombre ?? ""}` : c.base_nombre ?? "",
           fmtFecha(c.fecha_entrada),
-          c.tiene_destino ? "Ver albarán" : c.traslado ?? "",
+          destino,
           c.ultima_consigna ? "Sí" : "",
           fmtFecha(c.ultima_consigna),
           c.observaciones ?? "",

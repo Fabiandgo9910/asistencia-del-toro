@@ -157,8 +157,8 @@ export async function exportarPorFiltro(
   }
 
   const { data, error } = await consulta
-    .order("fecha_entrada", { ascending: false })
-    .order("id", { ascending: false });
+    .order("fecha_entrada", { ascending: true })
+    .order("id", { ascending: true });
   if (error) lanzar("Error al exportar", error);
   return (data ?? []) as Coche[];
 }
