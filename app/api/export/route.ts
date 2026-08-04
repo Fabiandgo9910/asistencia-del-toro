@@ -9,20 +9,24 @@ const fmtFecha = (iso: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-ES") : "";
 
 // Ancho de cada columna en puntos (pt), en el mismo orden que la hoja base:
-// PLAZA | LL | TIPO | EXPEDIENTE | VEHÍCULO | MATRICULA | BASE | FECHA | DESTINO | CONSIGNA | FECHA | OBSERVACIONES
+// PLAZA | LL | TIPO | EXPEDIENTE | VEHÍCULO | MATRICULA | BASE | FECHA | DESTINO | CONSIGNA | OBSERVACIONES
+//
+// CONSIGNA es una sola columna con la fecha de la última consigna: si hay
+// fecha, se entiende que ya se hizo (no hace falta un "Sí" aparte). Eso,
+// más una BASE reducida al número y un par de columnas más ajustadas,
+// deja mucho más sitio para OBSERVACIONES.
 const COLUMNAS: { titulo: string; ancho: number; align?: "left" | "center" }[] = [
   { titulo: "PLAZA", ancho: 36 },
-  { titulo: "LL", ancho: 28 },
+  { titulo: "LL", ancho: 22 },
   { titulo: "TIPO", ancho: 42 },
   { titulo: "EXPEDIENTE", ancho: 65 },
-  { titulo: "VEHÍCULO", ancho: 95, align: "left" },
+  { titulo: "VEHÍCULO", ancho: 78, align: "left" },
   { titulo: "MATRICULA", ancho: 65 },
-  { titulo: "BASE", ancho: 80, align: "left" },
+  { titulo: "BASE", ancho: 36 },
   { titulo: "FECHA", ancho: 52 },
   { titulo: "DESTINO", ancho: 120, align: "left" },
-  { titulo: "CONSIGNA", ancho: 55 },
-  { titulo: "FECHA", ancho: 52 },
-  { titulo: "OBSERVACIONES", ancho: 90, align: "left" },
+  { titulo: "CONSIGNA", ancho: 60 },
+  { titulo: "OBSERVACIONES", ancho: 190, align: "left" },
 ];
 
 // GET /api/export?filtro=vencidos|con_salida|en_base&q=opcional
@@ -124,10 +128,9 @@ export async function GET(req: NextRequest) {
           c.numero_expediente ?? "",
           c.modelo ?? "",
           c.matricula,
-          c.base_numero ? `${c.base_numero} - ${c.base_nombre ?? ""}` : c.base_nombre ?? "",
+          c.base_numero ?? "",
           fmtFecha(c.fecha_entrada),
           destino,
-          c.ultima_consigna ? "Sí" : "",
           fmtFecha(c.ultima_consigna),
           c.observaciones ?? "",
         ],
