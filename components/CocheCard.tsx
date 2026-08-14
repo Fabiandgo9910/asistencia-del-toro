@@ -53,7 +53,7 @@ export default function CocheCard({
   puedeGestionar: boolean;
 }) {
   const [mostrarObs, setMostrarObs] = useState(false);
-  const [copiado, setCopiado] = useState(false);
+  const [campoCopiado, setCampoCopiado] = useState<"matricula" | "expediente" | "modelo" | null>(null);
   const activo = !coche.fecha_salida;
   const tieneDeuda = coche.penalizacion > 0;
   const esMoto = coche.tipo_vehiculo === "moto";
@@ -70,39 +70,36 @@ export default function CocheCard({
 
   const hayConsignaOAviso = coche.ultima_consigna || proximoAVencer || enCustodiaMapfre;
 
-  const copiarDatos = async () => {
-    const lineas = [
-      `Matrícula: ${coche.matricula}`,
-      `Modelo: ${coche.modelo || "—"}`,
-      `Tipo: ${esMoto ? "Moto" : "Coche"}`,
-      `Plaza: ${coche.plaza || "—"}`,
-      `Expediente: ${coche.numero_expediente || "—"}`,
-      `Base: ${coche.base_numero ? `${coche.base_numero} - ${coche.base_nombre ?? ""}` : coche.base_nombre || "—"}`,
-      `Entrada: ${fmtFecha(coche.fecha_entrada)}`,
-      `Días totales: ${coche.dias_totales}`,
-      `Propios hasta: ${fmtFecha(coche.fecha_fin_propios)}`,
-      `Mapfre hasta: ${fmtFecha(coche.fecha_fin_mapfre)}`,
-      `En custodia Mapfre: ${enCustodiaMapfre ? "Sí" : "No"}`,
-      `Destino previsto: ${coche.tiene_destino ? fmtFecha(coche.fecha_destino) : "—"}`,
-      `Traslado previsto: ${coche.traslado_previsto ? "Sí" : "No"}`,
-      `Salió: ${!activo ? fmtFechaHora(coche.fecha_salida) : "—"}`,
-      `Traslado: ${!activo && coche.traslado ? coche.empresa_traslado || "Sí" : "—"}`,
-      `Llave: ${coche.tiene_llave ? "Sí" : "No"}`,
-      `Calcinado: ${coche.esta_calcinado ? "Sí" : "No"}`,
-      `Bloqueado: ${coche.bloqueado ? "Sí" : "No"}`,
-      `Última consigna: ${coche.ultima_consigna ? fmtFecha(coche.ultima_consigna) : "—"}`,
-      `Penalización: ${coche.penalizacion}€`,
-      `Observaciones: ${coche.observaciones?.trim() || "Sin observaciones."}`,
-    ];
+  // Copia un solo campo (matrícula, expediente o modelo) al portapapeles,
+  // por separado — no todos los datos de golpe.
+  const copiarCampo = async (
+    campo: "matricula" | "expediente" | "modelo",
+    valor: string | null | undefined,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation(); // no debe también abrir/cerrar las observaciones
+    if (!valor) return;
     try {
-      await navigator.clipboard.writeText(lineas.join("\n"));
-      setCopiado(true);
-      setTimeout(() => setCopiado(false), 1500);
+      await navigator.clipboard.writeText(valor);
+      setCampoCopiado(campo);
+      setTimeout(() => setCampoCopiado((actual) => (actual === campo ? null : actual)), 1200);
     } catch {
       // Si el navegador bloquea el portapapeles (poco común), no pasa
       // nada grave: simplemente no se marca como copiado.
     }
   };
+
+  function BotonCopiar({ campo, valor }: { campo: "matricula" | "expediente" | "modelo"; valor: string | null | undefined }) {
+    return (
+      <button
+        onClick={(e) => copiarCampo(campo, valor, e)}
+        title={`Copiar ${campo === "matricula" ? "matrícula" : campo}`}
+        className="shrink-0 text-toro-slate/70 transition hover:text-toro-ink"
+      >
+        {campoCopiado === campo ? <Check size={12} className="text-toro-ok" /> : <Copy size={12} />}
+      </button>
+    );
+  }
 
   // Todas las tarjetas dibujan exactamente los mismos bloques, en el mismo
   // orden, con una altura mínima reservada en cada uno (aunque no tengan
@@ -117,49 +114,46 @@ export default function CocheCard({
       {/* 1. Identificación: su propia fila, sin compartir espacio con botones.
           El botón de copiar es un elemento hermano (no puede ir anidado
           dentro del botón que despliega observaciones). */}
-      <div className="flex items-start justify-between gap-2">
-        <button
-          onClick={() => setMostrarObs((v) => !v)}
-          className="min-w-0 flex-1 text-left"
-          title="Ver observaciones"
-        >
-          <div className="flex flex-wrap items-center gap-2">
+      <div
+        onClick={() => setMostrarObs((v) => !v)}
+        className="min-w-0 cursor-pointer text-left"
+        title="Ver observaciones"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-1">
             <MatriculaBadge matricula={coche.matricula} />
-            <span title={esMoto ? "Moto" : "Coche"} className="text-toro-slate">
-              {esMoto ? <Bike size={15} /> : <Car size={15} />}
-            </span>
-            {coche.modelo && (
+            <BotonCopiar campo="matricula" valor={coche.matricula} />
+          </span>
+          <span title={esMoto ? "Moto" : "Coche"} className="text-toro-slate">
+            {esMoto ? <Bike size={15} /> : <Car size={15} />}
+          </span>
+          {coche.modelo && (
+            <span className="flex min-w-0 items-center gap-1">
               <span className="min-w-0 truncate text-sm font-medium text-toro-ink">{coche.modelo}</span>
-            )}
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-toro-slate">
-            {coche.plaza != null && coche.plaza !== "" && (
-              <span className="flex items-center gap-1">
-                <MapPin size={12} /> Plaza {coche.plaza}
-              </span>
-            )}
-            {coche.numero_expediente && (
-              <span className="flex items-center gap-1">
-                <FileText size={12} /> Exp. {coche.numero_expediente}
-              </span>
-            )}
-            {coche.base_nombre && (
-              <span className="flex items-center gap-1">
-                <Building2 size={12} />
-                {coche.base_numero ? `${coche.base_numero} · ${coche.base_nombre}` : coche.base_nombre}
-              </span>
-            )}
-            <span>{coche.dias_totales} días{activo ? " en curso" : ""}</span>
-          </div>
-        </button>
-
-        <button
-          onClick={copiarDatos}
-          title="Copiar todos los datos de este coche"
-          className="shrink-0 rounded-card border border-toro-line p-1.5 text-toro-slate transition hover:text-toro-ink"
-        >
-          {copiado ? <Check size={14} className="text-toro-ok" /> : <Copy size={14} />}
-        </button>
+              <BotonCopiar campo="modelo" valor={coche.modelo} />
+            </span>
+          )}
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-toro-slate">
+          {coche.plaza != null && coche.plaza !== "" && (
+            <span className="flex items-center gap-1">
+              <MapPin size={12} /> Plaza {coche.plaza}
+            </span>
+          )}
+          {coche.numero_expediente && (
+            <span className="flex items-center gap-1">
+              <FileText size={12} /> Exp. {coche.numero_expediente}
+              <BotonCopiar campo="expediente" valor={coche.numero_expediente} />
+            </span>
+          )}
+          {coche.base_nombre && (
+            <span className="flex items-center gap-1">
+              <Building2 size={12} />
+              {coche.base_numero ? `${coche.base_numero} · ${coche.base_nombre}` : coche.base_nombre}
+            </span>
+          )}
+          <span>{coche.dias_totales} días{activo ? " en curso" : ""}</span>
+        </div>
       </div>
 
       {/* 2. Penalización: altura reservada siempre, con o sin deuda */}
