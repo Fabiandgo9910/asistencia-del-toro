@@ -4,8 +4,9 @@
 -- → Run.
 --
 -- Sustituye por completo a Neon + Vercel: ya no hace falta ninguna base de
--- datos ni cron job en Vercel. Supabase pone la base de datos (Postgres),
--- la autenticación (Supabase Auth) y el trabajo programado (pg_cron).
+-- datos ni cron job en Vercel. Supabase pone la base de datos (Postgres) y
+-- la autenticación (Supabase Auth). No hay ninguna limpieza automática de
+-- registros: la retención es indefinida, a propósito.
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
@@ -286,35 +287,10 @@ left join public.bases b on b.id = c.base_id;
 -- ni crear políticas aparte para esta vista.
 
 -- ----------------------------------------------------------------------------
--- 6) LIMPIEZA AUTOMÁTICA (retención de 1 año) — con pg_cron, sin Vercel
+-- 6) SIN LIMPIEZA AUTOMÁTICA — retención sin límite, a propósito
 -- ----------------------------------------------------------------------------
-
-create or replace function public.limpiar_registros_antiguos()
-returns integer
-language plpgsql
-as $$
-declare
-  filas_borradas integer;
-begin
-  delete from public.coches where fecha_entrada < (current_date - interval '365 days');
-  get diagnostics filas_borradas = row_count;
-  return filas_borradas;
-end;
-$$;
-
--- Se puede probar manualmente con: select public.limpiar_registros_antiguos();
-
--- Activa la extensión pg_cron (una sola vez por proyecto) y programa la
--- limpieza a diario a las 03:00 UTC. Esto sustituye por completo al Vercel
--- Cron Job que se usaba antes.
-create extension if not exists pg_cron;
-
-select cron.schedule(
-  'limpieza-diaria-coches',
-  '0 3 * * *',
-  $$ select public.limpiar_registros_antiguos(); $$
-);
-
--- Para ver los jobs programados:      select * from cron.job;
--- Para cancelar este job si hiciera falta:
---   select cron.unschedule('limpieza-diaria-coches');
+-- Antes había un pg_cron que borraba a diario los coches con más de 365
+-- días desde su entrada. Se quitó por decisión expresa: los registros se
+-- guardan para siempre, sin ningún borrado automático. Si en el futuro
+-- hiciera falta limpiar algo, se hace a mano con un DELETE explícito,
+-- nunca de forma automática y silenciosa.

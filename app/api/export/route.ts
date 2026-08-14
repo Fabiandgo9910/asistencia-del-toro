@@ -105,16 +105,16 @@ export async function GET(req: NextRequest) {
       }
 
       // DESTINO combina, cuando aplica, varios avisos en una sola celda:
-      // - "Ver albarán": ya tiene fecha de salida prevista.
       // - "Custodia Mapfre": ya pasaron nuestros 3 días propios, así que
-      //   ahora corre la custodia de Mapfre (días 4 a 12).
+      //   ahora corre la custodia de Mapfre (días 4 a 12). Esto se aplica
+      //   siempre que se hayan pasado esos 3 días, tenga o no fecha de
+      //   salida prevista — son dos cosas independientes.
+      // - "Ver albarán": ya tiene fecha de salida prevista.
       // - "Traslado previsto": se marcó manualmente que se prevé que
       //   salga por traslado.
       const avisos: string[] = [];
-      if (c.tiene_destino) {
-        avisos.push("Ver albarán");
-        if (c.dias_totales > 3) avisos.push("Custodia Mapfre");
-      }
+      if (c.dias_totales > 3) avisos.push("Custodia Mapfre");
+      if (c.tiene_destino) avisos.push("Ver albarán");
       if (c.traslado_previsto) avisos.push("Traslado previsto");
       const destino = avisos.length > 0 ? avisos.join(" · ") : c.traslado ?? "";
 

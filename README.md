@@ -3,9 +3,10 @@
 Sistema interno de gestión de coches en depósito. Diseñado para que el operario
 registre entradas, salidas y auditorías diarias con el mínimo de clics posible.
 
-**Toda la app corre sobre Supabase**: la base de datos (Postgres), la
-autenticación (Supabase Auth) y la limpieza automática de registros antiguos
-(`pg_cron`) viven ahí. Ya no hace falta Neon ni ningún Cron Job de Vercel.
+**Toda la app corre sobre Supabase**: la base de datos (Postgres) y la
+autenticación (Supabase Auth) viven ahí. Ya no hace falta Neon ni ningún
+Cron Job de Vercel. Los registros no se borran nunca solos — la retención
+es indefinida, a propósito.
 
 ---
 
@@ -36,9 +37,8 @@ así que no importa cuál te muestre tu proyecto.
   roles.
 - La vista `coches_calculado`, que resuelve en SQL los días de custodia, la
   penalización y si está a punto de vencer.
-- El job de `pg_cron` que purga a diario los registros de más de 365 días
-  (sustituye por completo al Cron Job de Vercel que tenía este proyecto
-  antes).
+- No crea ninguna limpieza automática: los registros se guardan sin límite
+  de tiempo.
 
 ### 3. Variables de entorno
 
@@ -183,8 +183,9 @@ lib/
   supabase/
     server.ts, client.ts, admin.ts, env.ts
 middleware.ts                       Protege páginas y aplica el gate de aprobación
-supabase/migracion.sql              Todo el esquema: tablas, RLS, triggers, pg_cron
+supabase/migracion.sql               Todo el esquema: tablas, RLS, triggers
 supabase/migracion_quitar_presencia.sql  Solo si venías de una versión con "presente"/revisión
 supabase/migracion_v3.sql           Bases, tipo de vehículo, plaza con letras, traslado previsto, consignas editables, aviso a 5 días
+supabase/migracion_sin_limite.sql   Quita el cron de limpieza automática: retención sin límite
 types/coche.ts
 ```

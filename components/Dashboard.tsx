@@ -175,7 +175,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
           {/* Grid responsivo: 1 columna en móvil, hasta 3 en pantallas anchas,
               para que quepan más coches sin recortar ningún dato de la tarjeta
               (cada CocheCard sigue mostrando toda su información completa). */}
-          <div className="grid grid-cols-1 items-start gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 items-start gap-2.5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {visibles.map((coche) => (
               <CocheCard
                 key={coche.id}

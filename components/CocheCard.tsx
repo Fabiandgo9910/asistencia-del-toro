@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Key, KeyRound, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle, FileText, RotateCcw, Car, Bike, Building2 } from "lucide-react";
+import { Key, KeyRound, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle, FileText, RotateCcw, Car, Bike, Building2, Copy, Check } from "lucide-react";
 import MatriculaBadge from "./MatriculaBadge";
 import { diasParaVencer as calcDiasParaVencer, estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
@@ -53,6 +53,7 @@ export default function CocheCard({
   puedeGestionar: boolean;
 }) {
   const [mostrarObs, setMostrarObs] = useState(false);
+  const [copiado, setCopiado] = useState(false);
   const activo = !coche.fecha_salida;
   const tieneDeuda = coche.penalizacion > 0;
   const esMoto = coche.tipo_vehiculo === "moto";
@@ -62,7 +63,46 @@ export default function CocheCard({
   const diasParaVencer = calcDiasParaVencer(coche.dias_totales, coche.dias_extra);
   const proximoAVencer = estaProximoAVencer(coche.dias_totales, coche.dias_extra, activo, coche.tiene_destino);
 
-  const hayConsignaOAviso = coche.ultima_consigna || proximoAVencer;
+  // En custodia de Mapfre: ya pasaron nuestros 3 días propios. Esto es
+  // independiente de si tiene o no fecha de salida prevista — son dos
+  // cosas distintas y no hace falta tener una para que se dé la otra.
+  const enCustodiaMapfre = activo && coche.dias_totales > 3;
+
+  const hayConsignaOAviso = coche.ultima_consigna || proximoAVencer || enCustodiaMapfre;
+
+  const copiarDatos = async () => {
+    const lineas = [
+      `Matrícula: ${coche.matricula}`,
+      `Modelo: ${coche.modelo || "—"}`,
+      `Tipo: ${esMoto ? "Moto" : "Coche"}`,
+      `Plaza: ${coche.plaza || "—"}`,
+      `Expediente: ${coche.numero_expediente || "—"}`,
+      `Base: ${coche.base_numero ? `${coche.base_numero} - ${coche.base_nombre ?? ""}` : coche.base_nombre || "—"}`,
+      `Entrada: ${fmtFecha(coche.fecha_entrada)}`,
+      `Días totales: ${coche.dias_totales}`,
+      `Propios hasta: ${fmtFecha(coche.fecha_fin_propios)}`,
+      `Mapfre hasta: ${fmtFecha(coche.fecha_fin_mapfre)}`,
+      `En custodia Mapfre: ${enCustodiaMapfre ? "Sí" : "No"}`,
+      `Destino previsto: ${coche.tiene_destino ? fmtFecha(coche.fecha_destino) : "—"}`,
+      `Traslado previsto: ${coche.traslado_previsto ? "Sí" : "No"}`,
+      `Salió: ${!activo ? fmtFechaHora(coche.fecha_salida) : "—"}`,
+      `Traslado: ${!activo && coche.traslado ? coche.empresa_traslado || "Sí" : "—"}`,
+      `Llave: ${coche.tiene_llave ? "Sí" : "No"}`,
+      `Calcinado: ${coche.esta_calcinado ? "Sí" : "No"}`,
+      `Bloqueado: ${coche.bloqueado ? "Sí" : "No"}`,
+      `Última consigna: ${coche.ultima_consigna ? fmtFecha(coche.ultima_consigna) : "—"}`,
+      `Penalización: ${coche.penalizacion}€`,
+      `Observaciones: ${coche.observaciones?.trim() || "Sin observaciones."}`,
+    ];
+    try {
+      await navigator.clipboard.writeText(lineas.join("\n"));
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 1500);
+    } catch {
+      // Si el navegador bloquea el portapapeles (poco común), no pasa
+      // nada grave: simplemente no se marca como copiado.
+    }
+  };
 
   // Todas las tarjetas dibujan exactamente los mismos bloques, en el mismo
   // orden, con una altura mínima reservada en cada uno (aunque no tengan
@@ -74,41 +114,53 @@ export default function CocheCard({
         coche.bloqueado ? "border-toro-red/40" : "border-toro-line"
       }`}
     >
-      {/* 1. Identificación: su propia fila, sin compartir espacio con botones */}
-      <button
-        onClick={() => setMostrarObs((v) => !v)}
-        className="min-w-0 text-left"
-        title="Ver observaciones"
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <MatriculaBadge matricula={coche.matricula} />
-          <span title={esMoto ? "Moto" : "Coche"} className="text-toro-slate">
-            {esMoto ? <Bike size={15} /> : <Car size={15} />}
-          </span>
-          {coche.modelo && (
-            <span className="min-w-0 truncate text-sm font-medium text-toro-ink">{coche.modelo}</span>
-          )}
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-toro-slate">
-          {coche.plaza != null && coche.plaza !== "" && (
-            <span className="flex items-center gap-1">
-              <MapPin size={12} /> Plaza {coche.plaza}
+      {/* 1. Identificación: su propia fila, sin compartir espacio con botones.
+          El botón de copiar es un elemento hermano (no puede ir anidado
+          dentro del botón que despliega observaciones). */}
+      <div className="flex items-start justify-between gap-2">
+        <button
+          onClick={() => setMostrarObs((v) => !v)}
+          className="min-w-0 flex-1 text-left"
+          title="Ver observaciones"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <MatriculaBadge matricula={coche.matricula} />
+            <span title={esMoto ? "Moto" : "Coche"} className="text-toro-slate">
+              {esMoto ? <Bike size={15} /> : <Car size={15} />}
             </span>
-          )}
-          {coche.numero_expediente && (
-            <span className="flex items-center gap-1">
-              <FileText size={12} /> Exp. {coche.numero_expediente}
-            </span>
-          )}
-          {coche.base_nombre && (
-            <span className="flex items-center gap-1">
-              <Building2 size={12} />
-              {coche.base_numero ? `${coche.base_numero} · ${coche.base_nombre}` : coche.base_nombre}
-            </span>
-          )}
-          <span>{coche.dias_totales} días{activo ? " en curso" : ""}</span>
-        </div>
-      </button>
+            {coche.modelo && (
+              <span className="min-w-0 truncate text-sm font-medium text-toro-ink">{coche.modelo}</span>
+            )}
+          </div>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-toro-slate">
+            {coche.plaza != null && coche.plaza !== "" && (
+              <span className="flex items-center gap-1">
+                <MapPin size={12} /> Plaza {coche.plaza}
+              </span>
+            )}
+            {coche.numero_expediente && (
+              <span className="flex items-center gap-1">
+                <FileText size={12} /> Exp. {coche.numero_expediente}
+              </span>
+            )}
+            {coche.base_nombre && (
+              <span className="flex items-center gap-1">
+                <Building2 size={12} />
+                {coche.base_numero ? `${coche.base_numero} · ${coche.base_nombre}` : coche.base_nombre}
+              </span>
+            )}
+            <span>{coche.dias_totales} días{activo ? " en curso" : ""}</span>
+          </div>
+        </button>
+
+        <button
+          onClick={copiarDatos}
+          title="Copiar todos los datos de este coche"
+          className="shrink-0 rounded-card border border-toro-line p-1.5 text-toro-slate transition hover:text-toro-ink"
+        >
+          {copiado ? <Check size={14} className="text-toro-ok" /> : <Copy size={14} />}
+        </button>
+      </div>
 
       {/* 2. Penalización: altura reservada siempre, con o sin deuda */}
       <div
@@ -253,13 +305,18 @@ export default function CocheCard({
         />
       </div>
 
-      {/* 6. Consigna hecha / próxima a vencer. Altura reservada siempre. */}
+      {/* 6. Consigna hecha / en custodia Mapfre / próxima a vencer. Altura reservada siempre. */}
       <div className="flex min-h-[24px] flex-wrap gap-1.5">
         {hayConsignaOAviso && (
           <>
             {coche.ultima_consigna && (
               <span className="flex items-center gap-1 rounded-full bg-toro-okBg px-2 py-0.5 text-[11px] font-medium text-toro-ok">
                 <CheckCircle2 size={11} /> Consigna hecha · {fmtFecha(coche.ultima_consigna)}
+              </span>
+            )}
+            {enCustodiaMapfre && (
+              <span className="flex items-center gap-1 rounded-full bg-toro-bg px-2 py-0.5 text-[11px] font-medium text-toro-slate">
+                <Building2 size={11} /> Custodia Mapfre
               </span>
             )}
             {proximoAVencer && (
