@@ -120,7 +120,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
 
   return (
     <>
-      <main className="min-h-screen pb-28">
+      <main className="min-h-dvh pb-28">
         <BuscadorBar
           valor={query}
           onChange={setQuery}

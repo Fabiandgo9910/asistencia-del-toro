@@ -101,7 +101,7 @@ export default function ConsignasModal({
 
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-toro-ink/40 sm:items-center">
-      <div className="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-t-card bg-toro-surface p-5 shadow-card sm:rounded-card">
+      <div className="max-h-[85dvh] w-full max-w-md overflow-y-auto rounded-t-card bg-toro-surface p-5 shadow-card sm:rounded-card">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-toro-ink">
             Consignas · {coche.matricula}
@@ -121,18 +121,18 @@ export default function ConsignasModal({
               </button>
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               type="date"
               value={fecha}
               onChange={(e) => setFecha(e.target.value)}
-              className="rounded-card border border-toro-line bg-toro-surface px-3 py-2 text-sm outline-none focus:border-toro-red/40"
+              className="shrink-0 rounded-card border border-toro-line bg-toro-surface px-3 py-2 text-sm outline-none focus:border-toro-red/40"
             />
             <input
               value={observacion}
               onChange={(e) => setObservacion(e.target.value)}
               placeholder="Observación"
-              className="flex-1 rounded-card border border-toro-line bg-toro-surface px-3 py-2 text-sm outline-none focus:border-toro-red/40"
+              className="w-full min-w-0 flex-1 rounded-card border border-toro-line bg-toro-surface px-3 py-2 text-sm outline-none focus:border-toro-red/40"
             />
           </div>
           <button

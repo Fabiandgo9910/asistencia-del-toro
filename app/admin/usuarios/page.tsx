@@ -337,7 +337,7 @@ export default function UsuariosAdminPage() {
   );
 
   return (
-    <main className="mx-auto min-h-screen max-w-3xl px-4 py-6 sm:px-6">
+    <main className="mx-auto min-h-dvh max-w-3xl px-4 py-6 sm:px-6">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Link href="/" className="text-toro-slate hover:text-toro-ink">

@@ -90,7 +90,7 @@ export default function NuevaEntradaModal({
 
   return (
     <div className="fixed inset-0 z-20 flex items-end justify-center bg-toro-ink/40 sm:items-center">
-      <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-card bg-toro-surface p-5 shadow-card sm:rounded-card">
+      <div className="max-h-[90dvh] w-full max-w-md overflow-y-auto rounded-t-card bg-toro-surface p-5 shadow-card sm:rounded-card">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-toro-ink">Nueva entrada</h2>
           <button onClick={onCerrar} className="text-toro-slate hover:text-toro-ink">
@@ -159,7 +159,7 @@ export default function NuevaEntradaModal({
 
           <SelectorBase baseId={baseId} onChange={setBaseId} />
 
-          <label className="flex items-center justify-between text-sm text-toro-slate">
+          <label className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-toro-slate">
             Fecha de entrada
             <input
               type="date"
@@ -169,7 +169,7 @@ export default function NuevaEntradaModal({
             />
           </label>
           {mostrarFechaSalida && (
-            <label className="flex items-center justify-between text-sm text-toro-slate">
+            <label className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-toro-slate">
               Fecha de salida prevista (opcional)
               <input
                 type="date"
@@ -179,8 +179,8 @@ export default function NuevaEntradaModal({
               />
             </label>
           )}
-          <div className="flex flex-wrap gap-2 pt-1">
-            <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
+          <div className="grid grid-cols-2 gap-2 pt-1">
+            <label className="flex items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
               <input
                 type="checkbox"
                 checked={tieneLlave}
@@ -188,15 +188,15 @@ export default function NuevaEntradaModal({
               />
               Tiene llave
             </label>
-            <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
+            <label className="flex items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
               <input
                 type="checkbox"
                 checked={calcinado}
                 onChange={(e) => setCalcinado(e.target.checked)}
               />
-              Está calcinado
+              Calcinado
             </label>
-            <label className="flex flex-1 items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
+            <label className="col-span-2 flex items-center gap-2 rounded-card border border-toro-line px-3 py-2 text-sm text-toro-slate">
               <input
                 type="checkbox"
                 checked={bloqueado}

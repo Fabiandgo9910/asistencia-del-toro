@@ -16,7 +16,7 @@ export default function PendientePage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-toro-bg px-4">
+    <main className="flex min-h-dvh items-center justify-center bg-toro-bg px-4">
       <div className="w-full max-w-sm rounded-card bg-toro-surface p-6 text-center shadow-card">
         <Clock3 className="mx-auto mb-3 text-toro-slate" size={32} />
         <h1 className="mb-2 text-lg font-semibold text-toro-ink">Cuenta pendiente de aprobación</h1>

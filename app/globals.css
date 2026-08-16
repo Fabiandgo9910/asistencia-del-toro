@@ -45,6 +45,18 @@ html, body {
   outline-offset: 2px;
 }
 
+/* Evita el zoom automático de Safari/iOS al enfocar un campo: por debajo
+   de 16px, iOS agranda la página entera al tocar un input/select/textarea
+   (aunque tengan una clase de Tailwind tipo text-sm/text-xs con más
+   especificidad, de ahí el !important). A partir de "sm" (640px, donde ya
+   no hay pantallas táctiles con ese comportamiento) se deja que Tailwind
+   controle el tamaño con normalidad. */
+@media (max-width: 639px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

@@ -59,7 +59,7 @@ export default function SelectorBase({
 
   return (
     <div className="space-y-2">
-      <label className="flex items-center justify-between gap-2 text-sm text-toro-slate">
+      <label className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm text-toro-slate">
         Base
         <select
           value={baseId ?? ""}
@@ -70,7 +70,7 @@ export default function SelectorBase({
             }
             onChange(e.target.value ? Number(e.target.value) : null);
           }}
-          className="max-w-[65%] rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
+          className="max-w-full rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40 sm:max-w-[65%]"
         >
           <option value="">Sin asignar</option>
           {bases.map((b) => (
@@ -84,18 +84,18 @@ export default function SelectorBase({
 
       {creando && (
         <div className="space-y-2 rounded-card border border-toro-line bg-toro-bg p-2.5">
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row">
             <input
               value={numero}
               onChange={(e) => setNumero(e.target.value)}
               placeholder="Número"
-              className="w-1/3 rounded-card border border-toro-line px-2 py-2 text-sm outline-none focus:border-toro-red/40"
+              className="w-full rounded-card border border-toro-line px-2 py-2 text-sm outline-none focus:border-toro-red/40 sm:w-1/3"
             />
             <input
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
               placeholder="Nombre"
-              className="flex-1 rounded-card border border-toro-line px-2 py-2 text-sm outline-none focus:border-toro-red/40"
+              className="w-full min-w-0 flex-1 rounded-card border border-toro-line px-2 py-2 text-sm outline-none focus:border-toro-red/40"
             />
           </div>
           <input

@@ -35,7 +35,7 @@ export default function ActualizarPasswordPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-toro-bg px-4">
+    <main className="flex min-h-dvh items-center justify-center bg-toro-bg px-4">
       <form
         onSubmit={guardar}
         className="w-full max-w-sm rounded-card bg-toro-surface p-6 shadow-card"

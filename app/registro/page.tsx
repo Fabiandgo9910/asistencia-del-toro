@@ -48,7 +48,7 @@ export default function RegistroPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-toro-bg px-4 py-8">
+    <main className="flex min-h-dvh items-center justify-center bg-toro-bg px-4 py-8">
       <form
         onSubmit={enviar}
         className="w-full max-w-sm rounded-card bg-toro-surface p-6 shadow-card"

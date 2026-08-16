@@ -31,7 +31,7 @@ export default function RecuperarPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-toro-bg px-4">
+    <main className="flex min-h-dvh items-center justify-center bg-toro-bg px-4">
       <div className="w-full max-w-sm rounded-card bg-toro-surface p-6 shadow-card">
         <h1 className="mb-1 flex items-center justify-center gap-2 text-center text-lg font-semibold text-toro-ink">
           <KeyRound size={18} /> Recuperar contraseña
