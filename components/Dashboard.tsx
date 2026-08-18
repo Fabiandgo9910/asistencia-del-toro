@@ -12,6 +12,7 @@ import EditarCocheModal from "./EditarCocheModal";
 import ConsignasModal from "./ConsignasModal";
 import ExportarModal, { type FiltroExportacion } from "./ExportarModal";
 import ConfirmModal from "./ConfirmModal";
+import RevisionBaseAviso from "./RevisionBaseAviso";
 import { estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
 import type { Sesion } from "@/lib/sesion";
@@ -34,6 +35,8 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
   const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
   const [cocheParaConsignas, setCocheParaConsignas] = useState<Coche | null>(null);
   const [cocheParaReingreso, setCocheParaReingreso] = useState<Coche | null>(null);
+  const [cocheParaRegreso, setCocheParaRegreso] = useState<Coche | null>(null);
+  const [motivoRegreso, setMotivoRegreso] = useState("");
   const [exportarAbierto, setExportarAbierto] = useState(false);
   // Por defecto solo se muestran los coches que siguen en la base, que es
   // el caso de uso más habitual; el operario puede cambiarlo cuando quiera.
@@ -90,6 +93,39 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
     }
   };
 
+  // Salida temporal (excursión puntual, no es la salida definitiva): se
+  // marca directo, sin pedir nada — el motivo se pide solo al volver.
+  const marcarSalidaTemporal = async (coche: Coche) => {
+    const ahora = new Date().toISOString();
+    setCoches((prev) =>
+      prev.map((c) =>
+        c.id === coche.id
+          ? { ...c, fuera_temporalmente: true, fecha_salida_temporal: ahora, fecha_regreso: null, motivo_salida: null }
+          : c
+      )
+    );
+    await fetch(`/api/coches/${coche.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion: "salida_temporal" }),
+    });
+    cargar(query);
+  };
+
+  const confirmarRegreso = async () => {
+    if (!cocheParaRegreso) return;
+    const id = cocheParaRegreso.id;
+    const motivo = motivoRegreso.trim();
+    setCocheParaRegreso(null);
+    setMotivoRegreso("");
+    await fetch(`/api/coches/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accion: "regreso", motivo }),
+    });
+    cargar(query);
+  };
+
   const cerrarSesion = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -118,6 +154,16 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
     todos: `Sin coches para “${query || "todos"}”. Registra una entrada con el botón +.`,
   }[filtro];
 
+  // Conteo por tipo de vehículo, sobre lo que se está viendo ahora mismo
+  // (respeta el filtro y la búsqueda activos).
+  const conteoTipos = visibles.reduce(
+    (acc, c) => {
+      acc[c.tipo_vehiculo] = (acc[c.tipo_vehiculo] ?? 0) + 1;
+      return acc;
+    },
+    { coche: 0, moto: 0, furgon: 0 } as Record<string, number>
+  );
+
   return (
     <>
       <main className="min-h-dvh pb-28">
@@ -129,6 +175,8 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
           onCambiarFiltro={setFiltro}
           mostrarExportar={puedeGestionar}
         />
+
+        {puedeGestionar && <RevisionBaseAviso />}
 
         <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6">
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -166,6 +214,13 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
             </div>
           </div>
 
+          {!cargando && visibles.length > 0 && (
+            <p className="mb-3 -mt-1.5 text-[11px] text-toro-slate">
+              {conteoTipos.coche} coche{conteoTipos.coche === 1 ? "" : "s"} · {conteoTipos.moto} moto
+              {conteoTipos.moto === 1 ? "" : "s"} · {conteoTipos.furgon} furgón{conteoTipos.furgon === 1 ? "" : "es"}
+            </p>
+          )}
+
           {!cargando && visibles.length === 0 && (
             <p className="rounded-card border border-dashed border-toro-line py-10 text-center text-sm text-toro-slate">
               {mensajeVacio}
@@ -185,6 +240,8 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
                 onEditar={setCocheParaEditar}
                 onConsignas={setCocheParaConsignas}
                 onToggleTrasladoPrevisto={toggleTrasladoPrevisto}
+                onMarcarSalidaTemporal={marcarSalidaTemporal}
+                onPedirRegreso={setCocheParaRegreso}
                 puedeGestionar={puedeGestionar}
               />
             ))}
@@ -248,6 +305,27 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
               onConfirmar={confirmarReingreso}
               onCancelar={() => setCocheParaReingreso(null)}
             />
+
+            <ConfirmModal
+              abierto={!!cocheParaRegreso}
+              titulo={`¿Marcar el regreso de ${cocheParaRegreso?.matricula ?? ""}?`}
+              mensaje="Cuéntanos brevemente el motivo de la salida (opcional)."
+              textoConfirmar="Marcar regreso"
+              onConfirmar={confirmarRegreso}
+              onCancelar={() => {
+                setCocheParaRegreso(null);
+                setMotivoRegreso("");
+              }}
+            >
+              <input
+                autoFocus
+                value={motivoRegreso}
+                onChange={(e) => setMotivoRegreso(e.target.value)}
+                placeholder="Motivo (ej. revisión de taller)"
+                maxLength={200}
+                className="w-full rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
+              />
+            </ConfirmModal>
           </>
         )}
       </main>

@@ -93,11 +93,12 @@ $$;
 -- ----------------------------------------------------------------------------
 
 create table if not exists public.bases (
-  id         bigint generated always as identity primary key,
-  numero     text not null,
-  nombre     text not null,
-  direccion  text,
-  creado_en  timestamptz not null default now()
+  id               bigint generated always as identity primary key,
+  numero           text not null,
+  nombre           text not null,
+  direccion        text,
+  ultima_revision  timestamptz, -- última vez que se revisó que la base física coincide con la digital
+  creado_en        timestamptz not null default now()
 );
 
 create unique index if not exists idx_bases_numero on public.bases (lower(numero));
@@ -120,6 +121,35 @@ create policy "Editar bases"
   using (public.rol_actual() in ('admin', 'oficinista', 'super_admin'));
 
 -- ----------------------------------------------------------------------------
+-- 2.1) CONFIGURACIÓN (una sola fila): activar/desactivar el aviso semanal
+-- de revisión de bases. Todos los domingos hay que comprobar que la base
+-- física coincide con la digital; si no se marca como revisada, el aviso
+-- se queda visible hasta que se haga.
+-- ----------------------------------------------------------------------------
+
+create table if not exists public.configuracion (
+  id                          int primary key default 1,
+  revision_semanal_activada  boolean not null default true,
+  constraint configuracion_una_sola_fila check (id = 1)
+);
+
+insert into public.configuracion (id, revision_semanal_activada)
+values (1, true)
+on conflict (id) do nothing;
+
+alter table public.configuracion enable row level security;
+
+drop policy if exists "Ver configuración" on public.configuracion;
+create policy "Ver configuración"
+  on public.configuracion for select
+  using (exists (select 1 from public.perfiles p where p.id = auth.uid() and p.aprobado));
+
+drop policy if exists "Editar configuración" on public.configuracion;
+create policy "Editar configuración"
+  on public.configuracion for update
+  using (public.rol_actual() in ('admin', 'oficinista', 'super_admin'));
+
+-- ----------------------------------------------------------------------------
 -- 3) COCHES
 -- ----------------------------------------------------------------------------
 
@@ -137,11 +167,18 @@ create table if not exists public.coches (
   bloqueado          boolean not null default false,
   matricula          text not null,
   modelo             text,
-  tipo_vehiculo      text not null default 'coche' check (tipo_vehiculo in ('coche', 'moto')),
+  tipo_vehiculo      text not null default 'coche' check (tipo_vehiculo in ('coche', 'moto', 'furgon')),
   numero_expediente  text,
   fecha_salida       timestamp,
   observaciones      text,
-  base_id            bigint references public.bases (id)
+  base_id            bigint references public.bases (id),
+  -- Control de salidas/regresos temporales (el coche sigue "en base" en
+  -- general; esto es una excursión puntual, distinta de la salida
+  -- definitiva de arriba). El motivo se pide al marcar el regreso.
+  fuera_temporalmente     boolean not null default false,
+  fecha_salida_temporal   timestamptz,
+  fecha_regreso           timestamptz,
+  motivo_salida           text
 );
 
 create index if not exists idx_coches_matricula on public.coches (matricula);
@@ -239,6 +276,7 @@ select
   c.id, c.plaza, c.fecha_entrada, c.tiene_llave, c.esta_calcinado, c.bloqueado, c.traslado,
   c.traslado_previsto, c.empresa_traslado, c.fecha_traslado, c.fecha_destino, c.matricula, c.modelo,
   c.tipo_vehiculo, c.numero_expediente, c.fecha_salida, c.observaciones, c.base_id,
+  c.fuera_temporalmente, c.fecha_salida_temporal, c.fecha_regreso, c.motivo_salida,
   b.numero as base_numero, b.nombre as base_nombre,
   (c.fecha_salida is null and c.fecha_destino is not null) as tiene_destino,
   (select max(fecha) from public.consignas where consignas.coche_id = c.id) as ultima_consigna,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Key, KeyRound, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle, FileText, RotateCcw, Car, Bike, Building2, Copy, Check } from "lucide-react";
+import { Key, KeyRound, Flame, LogOut, MapPin, Pencil, Truck, ClipboardList, Navigation, Lock, CheckCircle2, AlertTriangle, FileText, RotateCcw, Car, Bike, Bus, Building2, Copy, Check } from "lucide-react";
 import MatriculaBadge from "./MatriculaBadge";
 import { diasParaVencer as calcDiasParaVencer, estaProximoAVencer } from "@/lib/penalizacion";
 import type { Coche } from "@/types/coche";
@@ -42,6 +42,8 @@ export default function CocheCard({
   onEditar,
   onConsignas,
   onToggleTrasladoPrevisto,
+  onMarcarSalidaTemporal,
+  onPedirRegreso,
   puedeGestionar,
 }: {
   coche: Coche;
@@ -50,6 +52,8 @@ export default function CocheCard({
   onEditar: (coche: Coche) => void;
   onConsignas: (coche: Coche) => void;
   onToggleTrasladoPrevisto: (coche: Coche, valor: boolean) => void;
+  onMarcarSalidaTemporal: (coche: Coche) => void;
+  onPedirRegreso: (coche: Coche) => void;
   puedeGestionar: boolean;
 }) {
   const [mostrarObs, setMostrarObs] = useState(false);
@@ -57,6 +61,7 @@ export default function CocheCard({
   const activo = !coche.fecha_salida;
   const tieneDeuda = coche.penalizacion > 0;
   const esMoto = coche.tipo_vehiculo === "moto";
+  const esFurgon = coche.tipo_vehiculo === "furgon";
 
   // A punto de vencerse la custodia: aún no vencida (sin días extra) pero a
   // 5 días o menos del día 12 -> aviso amarillo para adelantarse con la consigna.
@@ -124,8 +129,8 @@ export default function CocheCard({
             <MatriculaBadge matricula={coche.matricula} />
             <BotonCopiar campo="matricula" valor={coche.matricula} />
           </span>
-          <span title={esMoto ? "Moto" : "Coche"} className="text-toro-slate">
-            {esMoto ? <Bike size={15} /> : <Car size={15} />}
+          <span title={esMoto ? "Moto" : esFurgon ? "Furgón" : "Coche"} className="text-toro-slate">
+            {esMoto ? <Bike size={15} /> : esFurgon ? <Bus size={15} /> : <Car size={15} />}
           </span>
           {coche.modelo && (
             <span className="flex min-w-0 items-center gap-1">
@@ -242,6 +247,41 @@ export default function CocheCard({
         )}
       </div>
 
+      {/* 3b. Salida y regreso temporal: excursión puntual, distinta de la
+          salida definitiva de arriba (el coche sigue "en base"). El motivo
+          se pide justo al marcar el regreso. Altura reservada siempre. */}
+      <div className="flex min-h-[28px] flex-wrap items-center gap-2">
+        {coche.fuera_temporalmente ? (
+          <span className="flex items-center gap-1 rounded-full bg-toro-amberBg px-2.5 py-1 text-[11px] font-medium text-toro-amber">
+            <LogOut size={12} /> Fuera desde {fmtFecha(coche.fecha_salida_temporal)}
+          </span>
+        ) : coche.fecha_regreso ? (
+          <span className="flex items-center gap-1 rounded-full bg-toro-bg px-2.5 py-1 text-[11px] text-toro-slate">
+            <RotateCcw size={12} />
+            Volvió {fmtFecha(coche.fecha_regreso)}
+            {coche.motivo_salida ? ` · ${coche.motivo_salida}` : ""}
+          </span>
+        ) : null}
+
+        {puedeGestionar &&
+          activo &&
+          (coche.fuera_temporalmente ? (
+            <button
+              onClick={() => onPedirRegreso(coche)}
+              className="ml-auto flex shrink-0 items-center gap-1 rounded-card border border-toro-line px-2.5 py-1 text-[11px] text-toro-slate transition hover:text-toro-ink"
+            >
+              <RotateCcw size={12} /> Marcar regreso
+            </button>
+          ) : (
+            <button
+              onClick={() => onMarcarSalidaTemporal(coche)}
+              className="ml-auto flex shrink-0 items-center gap-1 rounded-card border border-toro-line px-2.5 py-1 text-[11px] text-toro-slate transition hover:text-toro-ink"
+            >
+              <LogOut size={12} /> Salió (temporal)
+            </button>
+          ))}
+      </div>
+
       {/* 4. Estado físico del coche: llave / calcinado / bloqueado.
           Siempre muestra al menos si tiene llave o no. */}
       <div className="flex min-h-[24px] flex-wrap gap-1.5">
@@ -310,7 +350,7 @@ export default function CocheCard({
             )}
             {enCustodiaMapfre && (
               <span className="flex items-center gap-1 rounded-full bg-toro-bg px-2 py-0.5 text-[11px] font-medium text-toro-slate">
-                <Building2 size={11} /> Custodia Mapfre
+                <Building2 size={11} /> Custodia
               </span>
             )}
             {proximoAVencer && (

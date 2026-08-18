@@ -120,6 +120,36 @@ export async function actualizarCoche(id: number, campos: Record<string, unknown
   if (error) lanzar("Error al actualizar el registro", error);
 }
 
+// --- Salida y regreso temporal (excursión puntual, distinta de la salida
+// definitiva de arriba) ---
+
+export async function marcarSalidaTemporal(id: number) {
+  const { error } = await db()
+    .from("coches")
+    .update({
+      fuera_temporalmente: true,
+      fecha_salida_temporal: new Date().toISOString(),
+      fecha_regreso: null,
+      motivo_salida: null,
+    })
+    .eq("id", id);
+  if (error) lanzar("Error al marcar la salida temporal", error);
+}
+
+// El motivo se pide justo al marcar el regreso (no al salir), para dejar
+// constancia de por qué salió y volvió en una sola acción.
+export async function marcarRegreso(id: number, motivo: string | null) {
+  const { error } = await db()
+    .from("coches")
+    .update({
+      fuera_temporalmente: false,
+      fecha_regreso: new Date().toISOString(),
+      motivo_salida: motivo,
+    })
+    .eq("id", id);
+  if (error) lanzar("Error al marcar el regreso", error);
+}
+
 export async function eliminarCoche(id: number) {
   const { error } = await db().from("coches").delete().eq("id", id);
   if (error) lanzar("Error al eliminar el registro", error);
@@ -208,7 +238,7 @@ export async function eliminarConsigna(id: number) {
 export async function listarBases(): Promise<Base[]> {
   const { data, error } = await db()
     .from("bases")
-    .select("id, numero, nombre, direccion")
+    .select("id, numero, nombre, direccion, ultima_revision")
     .order("numero", { ascending: true });
   if (error) lanzar("Error al listar bases", error);
   return (data ?? []) as Base[];
@@ -222,8 +252,41 @@ export async function crearBase(data: {
   const { data: fila, error } = await db()
     .from("bases")
     .insert({ numero: data.numero, nombre: data.nombre, direccion: data.direccion })
-    .select("id, numero, nombre, direccion")
+    .select("id, numero, nombre, direccion, ultima_revision")
     .single();
   if (error) lanzar("Error al crear la base", error);
   return fila as Base;
+}
+
+// Marca una base como revisada ahora mismo (revisión semanal: que la base
+// física coincida con la digital).
+export async function marcarBaseRevisada(id: number): Promise<Base> {
+  const { data, error } = await db()
+    .from("bases")
+    .update({ ultima_revision: new Date().toISOString() })
+    .eq("id", id)
+    .select("id, numero, nombre, direccion, ultima_revision")
+    .single();
+  if (error) lanzar("Error al marcar la base como revisada", error);
+  return data as Base;
+}
+
+// --- Configuración (una sola fila) ---
+
+export async function obtenerConfiguracion(): Promise<{ revision_semanal_activada: boolean }> {
+  const { data, error } = await db()
+    .from("configuracion")
+    .select("revision_semanal_activada")
+    .eq("id", 1)
+    .single();
+  if (error) lanzar("Error al leer la configuración", error);
+  return data as { revision_semanal_activada: boolean };
+}
+
+export async function actualizarConfiguracion(activada: boolean): Promise<void> {
+  const { error } = await db()
+    .from("configuracion")
+    .update({ revision_semanal_activada: activada })
+    .eq("id", 1);
+  if (error) lanzar("Error al actualizar la configuración", error);
 }

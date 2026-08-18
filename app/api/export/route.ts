@@ -69,6 +69,26 @@ export async function GET(req: NextRequest) {
     let pagina = doc.actual;
 
     pagina.texto(tituloFiltro, x0, y + 11, 11, "negrita");
+
+    // Conteo de vehículos, en la esquina superior derecha de la hoja:
+    // total y desglosado por tipo (coche/moto/furgón).
+    const conteoTipos = coches.reduce(
+      (acc, c) => {
+        acc[c.tipo_vehiculo] = (acc[c.tipo_vehiculo] ?? 0) + 1;
+        return acc;
+      },
+      { coche: 0, moto: 0, furgon: 0 } as Record<string, number>
+    );
+    const xConteo = doc.ancho - 210;
+    pagina.texto(`TOTAL VEHÍCULOS: ${coches.length}`, xConteo, y + 11, 10, "negrita");
+    pagina.texto(
+      `Coches: ${conteoTipos.coche} · Motos: ${conteoTipos.moto} · Furgones: ${conteoTipos.furgon}`,
+      xConteo,
+      y + 24,
+      8,
+      "regular"
+    );
+
     y += 16;
     pagina.texto(
       "LA CUSTODIA DE MAPFRE SON 9 DÍAS + 3 NUESTROS / EL EXCESO DE CUSTODIA SON 13€ X DIA",
@@ -104,19 +124,28 @@ export async function GET(req: NextRequest) {
         });
       }
 
-      // DESTINO combina, cuando aplica, varios avisos en una sola celda:
-      // - "Custodia Mapfre": ya pasaron nuestros 3 días propios, así que
-      //   ahora corre la custodia de Mapfre (días 4 a 12). Esto se aplica
-      //   siempre que se hayan pasado esos 3 días, tenga o no fecha de
-      //   salida prevista — son dos cosas independientes.
-      // - "Ver albarán": ya tiene fecha de salida prevista.
-      // - "Traslado previsto": se marcó manualmente que se prevé que
-      //   salga por traslado.
+      // DESTINO combina, cuando aplica, varios avisos en una sola celda,
+      // separados por " - ":
+      // - Estado de la custodia (uno de los tres, nunca a la vez):
+      //     "Exceso de custodia"  -> ya generó penalización (día 13+)
+      //     "Tope de custodia"    -> justo en el día 12, al límite
+      //     "Custodia"            -> ya pasaron los 3 días propios (día 4-11)
+      //   Se aplica siempre que corresponda, tenga o no fecha de salida
+      //   prevista — son cosas independientes.
+      // - "Ver Albarán": ya tiene fecha de salida prevista.
+      // - "Traslados": se marcó manualmente que se prevé que salga por traslado.
+      let estadoCustodia = "";
+      if (c.penalizacion > 0) estadoCustodia = "Exceso de custodia";
+      else if (c.dias_totales === 12) estadoCustodia = "Tope de custodia";
+      else if (c.dias_totales > 3) estadoCustodia = "Custodia";
+
       const avisos: string[] = [];
-      if (c.dias_totales > 3) avisos.push("Custodia Mapfre");
-      if (c.tiene_destino) avisos.push("Ver albarán");
-      if (c.traslado_previsto) avisos.push("Traslado previsto");
-      const destino = avisos.length > 0 ? avisos.join(" · ") : c.traslado ?? "";
+      if (estadoCustodia) avisos.push(estadoCustodia);
+      if (c.tiene_destino) avisos.push("Ver Albarán");
+      if (c.traslado_previsto) avisos.push("Traslados");
+      const destino = avisos.length > 0 ? avisos.join(" - ") : c.traslado ?? "";
+
+      const TIPO_VEHICULO: Record<string, string> = { moto: "Moto", furgon: "Furgón", coche: "Coche" };
 
       y = dibujarFila(
         pagina,
@@ -124,7 +153,7 @@ export async function GET(req: NextRequest) {
         [
           c.plaza ?? "",
           c.tiene_llave ? "Sí" : "No",
-          c.tipo_vehiculo === "moto" ? "Moto" : "Coche",
+          TIPO_VEHICULO[c.tipo_vehiculo] ?? "Coche",
           c.numero_expediente ?? "",
           c.modelo ?? "",
           c.matricula,

@@ -187,5 +187,8 @@ supabase/migracion.sql               Todo el esquema: tablas, RLS, triggers
 supabase/migracion_quitar_presencia.sql  Solo si venías de una versión con "presente"/revisión
 supabase/migracion_v3.sql           Bases, tipo de vehículo, plaza con letras, traslado previsto, consignas editables, aviso a 5 días
 supabase/migracion_sin_limite.sql   Quita el cron de limpieza automática: retención sin límite
+supabase/migracion_revision_base.sql  Aviso semanal de revisión de bases (domingos) + interruptor global
+supabase/migracion_furgon.sql       Añade "furgón" como tipo de vehículo válido
+supabase/migracion_salida_temporal.sql  Control de salida/regreso temporal por vehículo (con motivo)
 types/coche.ts
 ```

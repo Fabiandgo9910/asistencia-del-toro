@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Trash2, Save, Car, Bike } from "lucide-react";
+import { X, Trash2, Save, Car, Bike, Bus } from "lucide-react";
 import ConfirmModal from "./ConfirmModal";
 import SelectorBase from "./SelectorBase";
 import type { Coche, TipoVehiculo } from "@/types/coche";
@@ -154,6 +154,17 @@ export default function EditarCocheModal({
                 }`}
               >
                 <Bike size={16} /> Moto
+              </button>
+              <button
+                type="button"
+                onClick={() => setTipoVehiculo("furgon")}
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-card border py-2.5 text-sm font-medium transition ${
+                  tipoVehiculo === "furgon"
+                    ? "border-toro-red/50 bg-toro-warnBg/40 text-toro-ink"
+                    : "border-toro-line text-toro-slate"
+                }`}
+              >
+                <Bus size={16} /> Furgón
               </button>
             </div>
 

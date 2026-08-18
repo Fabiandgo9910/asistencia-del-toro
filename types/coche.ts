@@ -1,4 +1,4 @@
-export type TipoVehiculo = "coche" | "moto";
+export type TipoVehiculo = "coche" | "moto" | "furgon";
 
 export type Coche = {
   id: number;
@@ -19,6 +19,12 @@ export type Coche = {
   fecha_salida: string | null; // timestamp ISO, null = activo
   observaciones: string | null;
   base_id: number | null;
+  // Control de salidas/regresos temporales (excursión puntual, distinta
+  // de la salida definitiva de fecha_salida).
+  fuera_temporalmente: boolean;
+  fecha_salida_temporal: string | null;
+  fecha_regreso: string | null;
+  motivo_salida: string | null;
   // Calculado en servidor (SQL):
   base_numero: string | null;
   base_nombre: string | null;
@@ -43,6 +49,7 @@ export type Base = {
   numero: string;
   nombre: string;
   direccion: string | null;
+  ultima_revision: string | null;
 };
 
 export type NuevoCochePayload = {
