@@ -172,11 +172,8 @@ create table if not exists public.coches (
   fecha_salida       timestamp,
   observaciones      text,
   base_id            bigint references public.bases (id),
-  -- Control de salidas/regresos temporales (el coche sigue "en base" en
-  -- general; esto es una excursión puntual, distinta de la salida
-  -- definitiva de arriba). El motivo se pide al marcar el regreso.
-  fuera_temporalmente     boolean not null default false,
-  fecha_salida_temporal   timestamptz,
+  -- Al deshacer una salida se guarda, opcionalmente, cuándo y por qué
+  -- regresó (el motivo no es obligatorio).
   fecha_regreso           timestamptz,
   motivo_salida           text
 );
@@ -276,7 +273,7 @@ select
   c.id, c.plaza, c.fecha_entrada, c.tiene_llave, c.esta_calcinado, c.bloqueado, c.traslado,
   c.traslado_previsto, c.empresa_traslado, c.fecha_traslado, c.fecha_destino, c.matricula, c.modelo,
   c.tipo_vehiculo, c.numero_expediente, c.fecha_salida, c.observaciones, c.base_id,
-  c.fuera_temporalmente, c.fecha_salida_temporal, c.fecha_regreso, c.motivo_salida,
+  c.fecha_regreso, c.motivo_salida,
   b.numero as base_numero, b.nombre as base_nombre,
   (c.fecha_salida is null and c.fecha_destino is not null) as tiene_destino,
   (select max(fecha) from public.consignas where consignas.coche_id = c.id) as ultima_consigna,

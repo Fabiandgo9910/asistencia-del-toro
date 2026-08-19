@@ -35,8 +35,7 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
   const [cocheParaEditar, setCocheParaEditar] = useState<Coche | null>(null);
   const [cocheParaConsignas, setCocheParaConsignas] = useState<Coche | null>(null);
   const [cocheParaReingreso, setCocheParaReingreso] = useState<Coche | null>(null);
-  const [cocheParaRegreso, setCocheParaRegreso] = useState<Coche | null>(null);
-  const [motivoRegreso, setMotivoRegreso] = useState("");
+  const [motivoReingreso, setMotivoReingreso] = useState("");
   const [exportarAbierto, setExportarAbierto] = useState(false);
   // Por defecto solo se muestran los coches que siguen en la base, que es
   // el caso de uso más habitual; el operario puede cambiarlo cuando quiera.
@@ -69,11 +68,13 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
   const confirmarReingreso = async () => {
     if (!cocheParaReingreso) return;
     const id = cocheParaReingreso.id;
+    const motivo = motivoReingreso.trim();
     setCocheParaReingreso(null);
+    setMotivoReingreso("");
     await fetch(`/api/coches/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "revertir_salida" }),
+      body: JSON.stringify({ accion: "revertir_salida", motivo }),
     });
     cargar(query);
   };
@@ -91,39 +92,6 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
       // Revertir si falló (p. ej. un chofer no tiene permiso).
       setCoches((prev) => prev.map((c) => (c.id === coche.id ? { ...c, traslado_previsto: !valor } : c)));
     }
-  };
-
-  // Salida temporal (excursión puntual, no es la salida definitiva): se
-  // marca directo, sin pedir nada — el motivo se pide solo al volver.
-  const marcarSalidaTemporal = async (coche: Coche) => {
-    const ahora = new Date().toISOString();
-    setCoches((prev) =>
-      prev.map((c) =>
-        c.id === coche.id
-          ? { ...c, fuera_temporalmente: true, fecha_salida_temporal: ahora, fecha_regreso: null, motivo_salida: null }
-          : c
-      )
-    );
-    await fetch(`/api/coches/${coche.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "salida_temporal" }),
-    });
-    cargar(query);
-  };
-
-  const confirmarRegreso = async () => {
-    if (!cocheParaRegreso) return;
-    const id = cocheParaRegreso.id;
-    const motivo = motivoRegreso.trim();
-    setCocheParaRegreso(null);
-    setMotivoRegreso("");
-    await fetch(`/api/coches/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ accion: "regreso", motivo }),
-    });
-    cargar(query);
   };
 
   const cerrarSesion = async () => {
@@ -240,8 +208,6 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
                 onEditar={setCocheParaEditar}
                 onConsignas={setCocheParaConsignas}
                 onToggleTrasladoPrevisto={toggleTrasladoPrevisto}
-                onMarcarSalidaTemporal={marcarSalidaTemporal}
-                onPedirRegreso={setCocheParaRegreso}
                 puedeGestionar={puedeGestionar}
               />
             ))}
@@ -298,30 +264,20 @@ export default function Dashboard({ sesion }: { sesion: Sesion }) {
               titulo="¿Deshacer la salida?"
               mensaje={
                 cocheParaReingreso
-                  ? `El coche con matrícula ${cocheParaReingreso.matricula} volverá a quedar activo en la base.`
+                  ? `El coche con matrícula ${cocheParaReingreso.matricula} volverá a quedar activo en la base. Se anotará en observaciones que regresó hoy.`
                   : undefined
               }
               textoConfirmar="Deshacer salida"
               onConfirmar={confirmarReingreso}
-              onCancelar={() => setCocheParaReingreso(null)}
-            />
-
-            <ConfirmModal
-              abierto={!!cocheParaRegreso}
-              titulo={`¿Marcar el regreso de ${cocheParaRegreso?.matricula ?? ""}?`}
-              mensaje="Cuéntanos brevemente el motivo de la salida (opcional)."
-              textoConfirmar="Marcar regreso"
-              onConfirmar={confirmarRegreso}
               onCancelar={() => {
-                setCocheParaRegreso(null);
-                setMotivoRegreso("");
+                setCocheParaReingreso(null);
+                setMotivoReingreso("");
               }}
             >
               <input
-                autoFocus
-                value={motivoRegreso}
-                onChange={(e) => setMotivoRegreso(e.target.value)}
-                placeholder="Motivo (ej. revisión de taller)"
+                value={motivoReingreso}
+                onChange={(e) => setMotivoReingreso(e.target.value)}
+                placeholder="Motivo del regreso (opcional)"
                 maxLength={200}
                 className="w-full rounded-card border border-toro-line px-3 py-2 text-sm outline-none focus:border-toro-red/40"
               />

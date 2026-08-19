@@ -21,8 +21,7 @@ export type Coche = {
   base_id: number | null;
   // Control de salidas/regresos temporales (excursión puntual, distinta
   // de la salida definitiva de fecha_salida).
-  fuera_temporalmente: boolean;
-  fecha_salida_temporal: string | null;
+  // Al deshacer una salida se guarda, opcionalmente, cuándo y por qué regresó.
   fecha_regreso: string | null;
   motivo_salida: string | null;
   // Calculado en servidor (SQL):

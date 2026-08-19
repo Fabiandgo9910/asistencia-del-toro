@@ -3,8 +3,6 @@ import {
   actualizarCoche,
   darSalida,
   revertirSalida,
-  marcarSalidaTemporal,
-  marcarRegreso,
   eliminarCoche,
   obtenerCoche,
 } from "@/lib/db";
@@ -16,9 +14,8 @@ export const dynamic = "force-dynamic";
 // PATCH /api/coches/:id
 // Body admite varios modos:
 //   { accion: "dar_salida", traslado: boolean, empresa_traslado?: string }
-//   { accion: "revertir_salida" }  -> deshace una salida dada por error
-//   { accion: "salida_temporal" }  -> excursión puntual (no es la salida definitiva)
-//   { accion: "regreso", motivo?: string }  -> vuelve de la excursión
+//   { accion: "revertir_salida", motivo?: string }  -> el coche regresa a
+//     base (motivo opcional; se anota solo también en observaciones)
 //   { ...camposLibres }  -> edición manual desde el expediente
 //
 // Reservado a admin/oficinista/super_admin: los choferes solo pueden dar de
@@ -48,12 +45,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         empresaTraslado: body.empresa_traslado ?? null,
       });
     } else if (body.accion === "revertir_salida") {
-      await revertirSalida(id);
-    } else if (body.accion === "salida_temporal") {
-      await marcarSalidaTemporal(id);
-    } else if (body.accion === "regreso") {
       const motivo = typeof body.motivo === "string" && body.motivo.trim() ? body.motivo.trim() : null;
-      await marcarRegreso(id, motivo);
+      await revertirSalida(id, motivo);
     } else {
       const { accion, valor, ...campos } = body;
       if (typeof campos.matricula === "string") {

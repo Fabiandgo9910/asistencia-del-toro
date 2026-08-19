@@ -42,8 +42,6 @@ export default function CocheCard({
   onEditar,
   onConsignas,
   onToggleTrasladoPrevisto,
-  onMarcarSalidaTemporal,
-  onPedirRegreso,
   puedeGestionar,
 }: {
   coche: Coche;
@@ -52,8 +50,6 @@ export default function CocheCard({
   onEditar: (coche: Coche) => void;
   onConsignas: (coche: Coche) => void;
   onToggleTrasladoPrevisto: (coche: Coche, valor: boolean) => void;
-  onMarcarSalidaTemporal: (coche: Coche) => void;
-  onPedirRegreso: (coche: Coche) => void;
   puedeGestionar: boolean;
 }) {
   const [mostrarObs, setMostrarObs] = useState(false);
@@ -245,41 +241,6 @@ export default function CocheCard({
             )}
           </div>
         )}
-      </div>
-
-      {/* 3b. Salida y regreso temporal: excursión puntual, distinta de la
-          salida definitiva de arriba (el coche sigue "en base"). El motivo
-          se pide justo al marcar el regreso. Altura reservada siempre. */}
-      <div className="flex min-h-[28px] flex-wrap items-center gap-2">
-        {coche.fuera_temporalmente ? (
-          <span className="flex items-center gap-1 rounded-full bg-toro-amberBg px-2.5 py-1 text-[11px] font-medium text-toro-amber">
-            <LogOut size={12} /> Fuera desde {fmtFecha(coche.fecha_salida_temporal)}
-          </span>
-        ) : coche.fecha_regreso ? (
-          <span className="flex items-center gap-1 rounded-full bg-toro-bg px-2.5 py-1 text-[11px] text-toro-slate">
-            <RotateCcw size={12} />
-            Volvió {fmtFecha(coche.fecha_regreso)}
-            {coche.motivo_salida ? ` · ${coche.motivo_salida}` : ""}
-          </span>
-        ) : null}
-
-        {puedeGestionar &&
-          activo &&
-          (coche.fuera_temporalmente ? (
-            <button
-              onClick={() => onPedirRegreso(coche)}
-              className="ml-auto flex shrink-0 items-center gap-1 rounded-card border border-toro-line px-2.5 py-1 text-[11px] text-toro-slate transition hover:text-toro-ink"
-            >
-              <RotateCcw size={12} /> Marcar regreso
-            </button>
-          ) : (
-            <button
-              onClick={() => onMarcarSalidaTemporal(coche)}
-              className="ml-auto flex shrink-0 items-center gap-1 rounded-card border border-toro-line px-2.5 py-1 text-[11px] text-toro-slate transition hover:text-toro-ink"
-            >
-              <LogOut size={12} /> Salió (temporal)
-            </button>
-          ))}
       </div>
 
       {/* 4. Estado físico del coche: llave / calcinado / bloqueado.

@@ -100,7 +100,25 @@ export async function darSalida(
 // Deshace una salida dada por error: el coche vuelve a quedar activo en
 // la base, como si nunca hubiera salido. El filtro .not(...) evita
 // "revertir" un coche que en realidad sigue activo.
-export async function revertirSalida(id: number) {
+// Deshace una salida dada por error (o simplemente porque el coche
+// regresó a base): el coche vuelve a quedar activo. El motivo del
+// regreso es opcional; se guarda en su propia columna y, además, se anota
+// automáticamente en observaciones para que quede a la vista sin tener
+// que ir a buscarlo aparte.
+export async function revertirSalida(id: number, motivo: string | null) {
+  const { data: actual, error: errorLectura } = await db()
+    .from("coches")
+    .select("observaciones")
+    .eq("id", id)
+    .single();
+  if (errorLectura) lanzar("Error al leer el registro", errorLectura);
+
+  const fecha = new Date();
+  const nota =
+    `Regresó a base el ${fecha.toLocaleDateString("es-ES")}` + (motivo ? ` · Motivo: ${motivo}` : "");
+  const observacionesPrevias = (actual as { observaciones: string | null } | null)?.observaciones;
+  const observaciones = observacionesPrevias ? `${observacionesPrevias}\n${nota}` : nota;
+
   const { error } = await db()
     .from("coches")
     .update({
@@ -108,6 +126,9 @@ export async function revertirSalida(id: number) {
       traslado: null,
       empresa_traslado: null,
       fecha_traslado: null,
+      fecha_regreso: fecha.toISOString(),
+      motivo_salida: motivo,
+      observaciones,
     })
     .eq("id", id)
     .not("fecha_salida", "is", null);
@@ -118,36 +139,6 @@ export async function actualizarCoche(id: number, campos: Record<string, unknown
   if (Object.keys(campos).length === 0) return;
   const { error } = await db().from("coches").update(campos).eq("id", id);
   if (error) lanzar("Error al actualizar el registro", error);
-}
-
-// --- Salida y regreso temporal (excursión puntual, distinta de la salida
-// definitiva de arriba) ---
-
-export async function marcarSalidaTemporal(id: number) {
-  const { error } = await db()
-    .from("coches")
-    .update({
-      fuera_temporalmente: true,
-      fecha_salida_temporal: new Date().toISOString(),
-      fecha_regreso: null,
-      motivo_salida: null,
-    })
-    .eq("id", id);
-  if (error) lanzar("Error al marcar la salida temporal", error);
-}
-
-// El motivo se pide justo al marcar el regreso (no al salir), para dejar
-// constancia de por qué salió y volvió en una sola acción.
-export async function marcarRegreso(id: number, motivo: string | null) {
-  const { error } = await db()
-    .from("coches")
-    .update({
-      fuera_temporalmente: false,
-      fecha_regreso: new Date().toISOString(),
-      motivo_salida: motivo,
-    })
-    .eq("id", id);
-  if (error) lanzar("Error al marcar el regreso", error);
 }
 
 export async function eliminarCoche(id: number) {
